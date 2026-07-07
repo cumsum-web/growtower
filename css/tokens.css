@@ -1,3 +1,66 @@
-/* Design tokens: colors, type scale, spacing, radii. */
+/* ============================================================
+   GROW TOWER — design tokens
+   Single source for colors, fonts, and type scale.
+   Colors: use these variables only — never a raw hex elsewhere.
+   ============================================================ */
+
+/* ---- Fonts ------------------------------------------------ */
+/* Neuropol — display face */
+@font-face {
+  font-family: "Neuropol";
+  src: url("../assets/fonts/Neuropol.woff2") format("woff2"),
+       url("../assets/fonts/Neuropol.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Helvetica Neue LT Pro — 55 Roman */
+@font-face {
+  font-family: "Helvetica Neue LT Pro";
+  src: url("../assets/fonts/HelveticaNeueLTW0555Roman.woff2") format("woff2"),
+       url("../assets/fonts/HelveticaNeueLTW0555Roman.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Helvetica Neue LT Pro — bold slot.
+   NOTE: no "Bd" (75) file in /assets/fonts; 85 Heavy is registered
+   at weight 700 until/unless a true Bold file is added. */
+@font-face {
+  font-family: "Helvetica Neue LT Pro";
+  src: url("../assets/fonts/HelveticaNeueLTW0585Heavy.woff2") format("woff2"),
+       url("../assets/fonts/HelveticaNeueLTW0585Heavy.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
+  /* ---- Color ---------------------------------------------- */
+  --black: #000000;
+  --white: #FFFFFF;
+  --mint: #8FCFB0;        /* primary accent: icons, rules, grid, highlights */
+  --mint-deep: #5D8673;   /* duotone shadows, hover states */
+  --mint-mid: #689E84;
+  --teal: #56A49A;        /* product bucket color — CTAs and product callouts only */
+  --gray-studio: #CCCCCC; /* light section backgrounds, matches render backdrops */
+  --gray-ink: #2E2F2F;
+
+  /* ---- Font stacks ---------------------------------------- */
+  --font-display: "Neuropol", "Arial Black", sans-serif;
+  --font-body: "Helvetica Neue LT Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  /* ---- Type scale (fluid between 375px and 1440px) --------- */
+  --fs-display: clamp(2.75rem, 1.606rem + 4.883vw, 6rem);  /* 44 -> 96px */
+  --fs-h2: clamp(2rem, 1.472rem + 2.254vw, 3.5rem);        /* 32 -> 56px */
+  --fs-h3: clamp(1.25rem, 1.074rem + 0.751vw, 1.75rem);    /* 20 -> 28px */
+  --fs-body: clamp(1rem, 0.956rem + 0.188vw, 1.125rem);    /* 16 -> 18px */
+  --fs-eyebrow: 0.875rem;                                  /* 14px */
+
+  /* ---- Tracking / leading ---------------------------------- */
+  --tracking-display: 0.02em;
+  --tracking-eyebrow: 0.25em;
+  --leading-body: 1.6;
 }

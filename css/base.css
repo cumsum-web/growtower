@@ -1,1 +1,132 @@
-/* Base styles: reset, typography, layout primitives. */
+/* ============================================================
+   GROW TOWER — base styles & utilities
+   Requires tokens.css loaded first.
+   ============================================================ */
+
+/* ---- Reset-lite ------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body,
+h1, h2, h3, h4,
+p, figure, blockquote {
+  margin: 0;
+}
+
+img,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+/* ---- Document defaults ------------------------------------ */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background-color: var(--black);
+  color: var(--white);
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--fs-body);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: var(--mint);
+  color: var(--black);
+}
+
+/* ---- Type ------------------------------------------------- */
+h1,
+.display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-display);
+  letter-spacing: var(--tracking-display);
+  line-height: 1.05;
+}
+
+h2 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: var(--fs-h2);
+  line-height: 1.1;
+}
+
+h3 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: var(--fs-h3);
+  line-height: 1.2;
+}
+
+.eyebrow {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: var(--fs-eyebrow);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--mint);
+}
+
+/* ---- Utilities -------------------------------------------- */
+
+/* Fine mint blueprint grid on black, 64px cells — matches the
+   process book pages. */
+.bg-grid {
+  background-color: var(--black);
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--mint) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--mint) 8%, transparent) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* Duotone image treatment: grayscale the photo, then multiply a
+   mint -> deep-mint gradient over it, mapping tones
+   black -> deep mint -> mint like the green-tinted book photos.
+   Usage: <figure class="duotone"><img ...></figure> */
+.duotone {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--black);
+}
+
+.duotone > img,
+.duotone > picture,
+.duotone > video {
+  width: 100%;
+  filter: grayscale(1) contrast(1.05);
+}
+
+.duotone::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--mint) 0%, var(--mint-deep) 100%);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+/* Horizontal rule drawn with the brand chevrons, tinted mint via
+   mask so the SVG artwork itself is untouched.
+   Usage: <hr class="divider-chevron"> */
+.divider-chevron {
+  border: 0;
+  height: 0.875rem;
+  background-color: var(--mint);
+  -webkit-mask: url("../assets/svg/icon-chevrons.svg") center / contain no-repeat;
+  mask: url("../assets/svg/icon-chevrons.svg") center / contain no-repeat;
+}
