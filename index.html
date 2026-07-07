@@ -6,12 +6,66 @@
   <title>GROW TOWER — Aeroway Hydroponics</title>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sections/hero.css">
+  <script>
+    // Gate the intro: hide hero elements only when motion is allowed, and
+    // force-reveal after 3s in case a CDN script fails to load.
+    (function () {
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        document.documentElement.classList.add("hero-intro");
+        window.__heroIntroTimer = setTimeout(function () {
+          document.documentElement.classList.remove("hero-intro");
+        }, 3000);
+      }
+    })();
+  </script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+      }
+    }
+  </script>
 </head>
 <body>
   <main>
-    <h1>GROW TOWER</h1>
-    <p>Aeroway Hydroponics product site — under construction.</p>
+
+    <!-- ================= HERO ================= -->
+    <section class="hero" id="hero">
+      <div class="hero__stage">
+        <div class="hero__grid bg-grid" aria-hidden="true"></div>
+
+        <h1 class="hero__wordmark">
+          <img src="assets/svg/wordmark-growtower.svg" alt="GROW TOWER">
+        </h1>
+
+        <canvas class="hero__canvas" aria-hidden="true"></canvas>
+        <img class="hero__fallback"
+             src="assets/img/renders/full%20render.png"
+             alt="GROW TOWER — a hands-free desktop system combining nutrient film technique hydroponics with activated carbon air filtration">
+
+        <header class="hero__brand">
+          <img class="hero__mark" src="assets/svg/logo-mark.svg" alt="" width="40" height="40">
+          <p class="eyebrow">AEROWAY HYDROPONICS</p>
+        </header>
+
+        <div class="hero__card">
+          <p class="hero__tagline">The city moves fast. Your plants shouldn't have to keep up.</p>
+          <p class="hero__sub">A hands-free desktop system combining nutrient film technique hydroponics with activated carbon air filtration.</p>
+        </div>
+
+        <div class="hero__cue" aria-hidden="true">
+          <img src="assets/svg/icon-chevrons.svg" alt="">
+        </div>
+      </div>
+    </section>
+
   </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script type="module" src="js/hero.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
