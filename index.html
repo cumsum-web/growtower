@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/sections/hero.css">
   <link rel="stylesheet" href="css/sections/manifesto.css">
+  <link rel="stylesheet" href="css/sections/features.css">
   <script>
     // Gate the intro: hide hero elements only when motion is allowed, and
     // force-reveal after 3s in case a CDN script fails to load.
@@ -73,11 +74,80 @@
       </div>
     </section>
 
+    <!-- ================= FEATURES / ANATOMY ================= -->
+    <section class="features" id="features">
+      <div class="features__inner">
+
+        <header class="features__header">
+          <p class="eyebrow">ANATOMY</p>
+          <h2 class="features__title">FEATURES</h2>
+          <div class="features__rule"></div>
+        </header>
+
+        <div class="features__layout">
+          <div class="features__panel">
+            <canvas class="features__canvas" aria-hidden="true"></canvas>
+            <img class="features__still" src="assets/img/renders/full%20render.png" alt="">
+            <img class="features__hotspot" src="assets/svg/icon-plus.svg" alt="" aria-hidden="true">
+          </div>
+
+          <ol class="features__list">
+            <li class="feature-card">
+              <figure class="feature-card__media"><img src="assets/img/renders/head%20render.png" alt="" loading="lazy"></figure>
+              <p class="feature-card__num eyebrow">01</p>
+              <h3>AIR DRAFT PANEL</h3>
+              <p>Painted aluminum sheet-metal grates with an activated carbon panel behind them. The carbon panel lifts out from the top for easy replacement.</p>
+            </li>
+            <li class="feature-card">
+              <figure class="feature-card__media"><img src="assets/img/renders/full%20render.png" alt="" loading="lazy"></figure>
+              <p class="feature-card__num eyebrow">02</p>
+              <h3>PLANT HOLDERS</h3>
+              <p>PVC pipes set at a 45-degree angle. Plant roots hang inside the tower, bathed in the nutrient film.</p>
+            </li>
+            <li class="feature-card">
+              <figure class="feature-card__media"><img src="assets/img/renders/exploded%20view.png" alt="" loading="lazy"></figure>
+              <p class="feature-card__num eyebrow">03</p>
+              <h3>HOSE + SPINE</h3>
+              <p>The hose connects to the water pump inside the bucket. The spine secures the hose and continues the tower's form.</p>
+            </li>
+            <li class="feature-card">
+              <figure class="feature-card__media"><img src="assets/img/renders/base%20render.png" alt="" loading="lazy"></figure>
+              <p class="feature-card__num eyebrow">04</p>
+              <h3>PUMP</h3>
+              <p>A SeaFlow 10ft pump hidden inside the bucket. The power cord loops through a hole in the back.</p>
+            </li>
+            <li class="feature-card">
+              <figure class="feature-card__media"><img src="assets/img/renders/base%20render.png" alt="" loading="lazy"></figure>
+              <p class="feature-card__num eyebrow">05</p>
+              <h3>AIR INTAKE</h3>
+              <p>Circular intake modeled on standard air filter geometry, integrated seamlessly into the base.</p>
+            </li>
+            <li class="feature-card">
+              <figure class="feature-card__media"><img src="assets/img/renders/base%20render.png" alt="" loading="lazy"></figure>
+              <p class="feature-card__num eyebrow">06</p>
+              <h3>BASE PEGS</h3>
+              <p>Lock the bucket in for stability and security. 0.1mm fillets for a tight fit; the longer rear peg completes the continuous form.</p>
+            </li>
+          </ol>
+        </div>
+
+        <p class="features__materials eyebrow">
+          HDPE PLASTIC
+          <img src="assets/svg/icon-plus.svg" alt="">
+          PAINTED ALUMINUM
+          <img src="assets/svg/icon-plus.svg" alt="">
+          PVC
+        </p>
+
+      </div>
+    </section>
+
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
   <script src="js/manifesto.js"></script>
+  <script type="module" src="js/features.js"></script>
   <script type="module" src="js/hero.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>
