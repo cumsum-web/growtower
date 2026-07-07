@@ -129,8 +129,10 @@
 
 .concept-slide {
   flex: 0 0 auto;
-  width: min(70vw, 340px);
+  width: min(85vw, 620px);
   scroll-snap-align: start;
+  transform-origin: center center;
+  will-change: transform, opacity;
 }
 
 .concept-slide .eyebrow {
