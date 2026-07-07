@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>GROW TOWER — Component Styleguide</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <style>
+    /* ============================================================
+       Styleguide chrome + component candidates.
+       Internal page — linked nowhere. Component styles below
+       graduate into /css/sections or base.css once approved.
+       ============================================================ */
+
+    body { padding: 3rem 1.5rem 8rem; }
+    .wrap { max-width: 1080px; margin-inline: auto; }
+
+    .sg-section { margin-top: 5rem; }
+    .sg-label {
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: var(--tracking-eyebrow);
+      text-transform: uppercase;
+      color: var(--gray-studio);
+      margin-bottom: 1.25rem;
+    }
+    .sg-note {
+      font-size: 0.8125rem;
+      color: var(--gray-studio);
+      margin-top: 0.75rem;
+    }
+
+    .panel {
+      padding: 2.5rem;
+      border: 1px solid var(--gray-ink);
+      border-radius: 1rem;
+    }
+    .panel + .panel { margin-top: 1.5rem; }
+    .panel--studio {
+      background: var(--gray-studio);
+      border-color: var(--gray-studio);
+      color: var(--gray-ink);
+    }
+    .panel--studio h1, .panel--studio h2, .panel--studio h3 { color: var(--black); }
+    .panel--studio .eyebrow { color: var(--mint-deep); }
+
+    .type-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 1rem 2rem; }
+    .type-row + .type-row { margin-top: 2rem; }
+    .type-row .spec { font-size: 0.8125rem; color: var(--gray-studio); white-space: nowrap; }
+    .panel--studio .type-row .spec { color: var(--gray-ink); }
+
+    /* ---- 02 color swatches ---- */
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 1rem;
+    }
+    .swatch__chip {
+      height: 72px;
+      border-radius: 0.5rem 0.5rem 1.5rem 0.5rem;
+      border: 1px solid var(--gray-ink);
+    }
+    .swatch p { font-size: 0.8125rem; margin-top: 0.5rem; }
+    .swatch .hex { color: var(--gray-studio); }
+
+    /* ---- 03 blob card ---- */
+    .card-blob {
+      background: var(--black);
+      color: var(--white);
+      padding: 2.25rem;
+      border-radius: 1.25rem 1.25rem 1.25rem 5rem;
+      max-width: 420px;
+    }
+    .card-blob--outline {
+      border: 1px solid var(--mint);
+      border-radius: 1.25rem 1.25rem 5rem 1.25rem;
+    }
+    .card-blob h3 { margin-bottom: 1rem; }
+    .card-blob .plus-list { margin-bottom: 0; }
+
+    /* ---- plus-icon list (03 / 05) ---- */
+    .plus-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .plus-list li {
+      position: relative;
+      padding-left: 1.75rem;
+    }
+    .plus-list li + li { margin-top: 0.75rem; }
+    .plus-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.3em;
+      width: 0.875rem;
+      height: 0.875rem;
+      background: url("assets/svg/icon-plus.svg") center / contain no-repeat;
+    }
+
+    /* ---- 04 slash eyebrow ---- */
+    .eyebrow-slash { color: var(--white); }
+    .eyebrow-slash .sep { color: var(--mint); padding-inline: 0.6em; }
+
+    /* ---- 06 duotone compare ---- */
+    .compare {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    .compare figcaption {
+      font-size: 0.8125rem;
+      color: var(--gray-studio);
+      margin-top: 0.5rem;
+    }
+
+    /* ---- 07 buttons ---- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75em;
+      padding: 0.9em 1.7em;
+      border-radius: 0.75rem 0.75rem 1.5rem 0.75rem;
+      border: 1px solid transparent;
+      text-decoration: none;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+    .btn--primary {
+      background: var(--teal);
+      color: var(--black);
+      font-family: var(--font-display);
+      font-size: 0.875rem;
+      letter-spacing: var(--tracking-display);
+    }
+    .btn--primary:hover {
+      background: var(--mint-deep);
+      color: var(--white);
+    }
+    .btn--primary-alt {
+      background: var(--teal);
+      color: var(--black);
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 0.875rem;
+      letter-spacing: 0.05em;
+    }
+    .btn--primary-alt:hover {
+      background: var(--mint-deep);
+      color: var(--white);
+    }
+    .btn--ghost {
+      background: transparent;
+      border-color: var(--mint);
+      color: var(--mint);
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 0.875rem;
+      letter-spacing: 0.05em;
+    }
+    .btn--ghost:hover {
+      background: var(--mint);
+      color: var(--black);
+    }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: center; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .btn { transition: none; }
+    }
+
+    /* ---- 08 section-header lockup ---- */
+    .section-header .title {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: var(--fs-display);
+      letter-spacing: var(--tracking-display);
+      line-height: 1.05;
+      margin-top: 0.75rem;
+    }
+    .section-header .rule {
+      width: 6rem;
+      height: 4px;
+      background: var(--mint);
+      margin-top: 1.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <header>
+      <p class="eyebrow">GROW TOWER — INTERNAL</p>
+      <h3>Component styleguide</h3>
+      <p class="sg-note">Kit preview for approval. Linked nowhere; not part of the site nav.</p>
+    </header>
+
+    <!-- ================= 01 TYPOGRAPHY ================= -->
+    <section class="sg-section">
+      <p class="sg-label">01 / Typography — on black</p>
+      <div class="panel">
+        <div class="type-row"><h1>GROW TOWER</h1><span class="spec">display · Neuropol 400 · 96→44px · 0.02em</span></div>
+        <div class="type-row"><h2>HOW IT WORKS</h2><span class="spec">h2 · HNLT Pro 700 · 56→32px</span></div>
+        <div class="type-row"><h3>AIR DRAFT PANEL</h3><span class="spec">h3 · HNLT Pro 700 · 28→20px</span></div>
+        <div class="type-row"><p style="max-width: 46ch;">The city moves fast. Your plants shouldn't have to keep up. A hands-free desktop system combining nutrient film technique hydroponics with activated carbon air filtration.</p><span class="spec">body · HNLT Pro 400 · 18→16px · 1.6</span></div>
+        <div class="type-row"><p class="eyebrow">AEROWAY HYDROPONICS</p><span class="spec">eyebrow · HNLT Pro 700 · 14px · 0.25em · mint</span></div>
+      </div>
+
+      <p class="sg-label" style="margin-top: 2.5rem;">01 / Typography — on studio gray</p>
+      <div class="panel panel--studio">
+        <div class="type-row"><h1>GROW TOWER</h1><span class="spec">display on --gray-studio</span></div>
+        <div class="type-row"><h2>HOW IT WORKS</h2><span class="spec">h2</span></div>
+        <div class="type-row"><h3>AIR DRAFT PANEL</h3><span class="spec">h3</span></div>
+        <div class="type-row"><p style="max-width: 46ch;">The city moves fast. Your plants shouldn't have to keep up. A hands-free desktop system combining nutrient film technique hydroponics with activated carbon air filtration.</p><span class="spec">body · --gray-ink</span></div>
+        <div class="type-row"><p class="eyebrow">AEROWAY HYDROPONICS</p><span class="spec">eyebrow · --mint-deep on light bg</span></div>
+      </div>
+      <p class="sg-note">Note: eyebrow swaps --mint → --mint-deep on light backgrounds for contrast. Bold weight is the 85 Heavy cut standing in for Bd.</p>
+    </section>
+
+    <!-- ================= 02 COLOR ================= -->
+    <section class="sg-section">
+      <p class="sg-label">02 / Color</p>
+      <div class="swatches">
+        <div class="swatch"><div class="swatch__chip" style="background: var(--black);"></div><p>--black<br><span class="hex">#000000</span></p></div>
+        <div class="swatch"><div class="swatch__chip" style="background: var(--white);"></div><p>--white<br><span class="hex">#FFFFFF</span></p></div>
+        <div class="swatch"><div class="swatch__chip" style="background: var(--mint);"></div><p>--mint<br><span class="hex">#8FCFB0</span></p></div>
+        <div class="swatch"><div class="swatch__chip" style="background: var(--mint-mid);"></div><p>--mint-mid<br><span class="hex">#689E84</span></p></div>
+        <div class="swatch"><div class="swatch__chip" style="background: var(--mint-deep);"></div><p>--mint-deep<br><span class="hex">#5D8673</span></p></div>
+        <div class="swatch"><div class="swatch__chip" style="background: var(--teal);"></div><p>--teal<br><span class="hex">#56A49A</span></p></div>
+        <div class="swatch"><div class="swatch__chip" style="background: var(--gray-studio);"></div><p>--gray-studio<br><span class="hex">#CCCCCC</span></p></div>
+        <div class="swatch"><div class="swatch__chip" style="background: var(--gray-ink);"></div><p>--gray-ink<br><span class="hex">#2E2F2F</span></p></div>
+      </div>
+    </section>
+
+    <!-- ================= 03 BLOB CARD ================= -->
+    <section class="sg-section">
+      <p class="sg-label">03 / Blob card</p>
+      <div class="panel panel--studio">
+        <div class="card-blob">
+          <h3>MATERIALS</h3>
+          <ul class="plus-list">
+            <li>Tower + holders: HDPE plastic</li>
+            <li>Filter housing: painted aluminum</li>
+            <li>Ports: PVC</li>
+            <li>Reservoir: 2.5 gal bucket</li>
+          </ul>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="card-blob card-blob--outline">
+          <h3>PLANT HOLDERS</h3>
+          <p>PVC pipes set at a 45-degree angle. Plant roots hang inside the tower, bathed in the nutrient film.</p>
+        </div>
+      </div>
+      <p class="sg-note">Solid variant on studio gray; 1px --mint outline variant on black. Oversized corner alternates (bottom-left / bottom-right).</p>
+    </section>
+
+    <!-- ================= 04 SLASH EYEBROW ================= -->
+    <section class="sg-section">
+      <p class="sg-label">04 / Slash eyebrow label</p>
+      <div class="panel">
+        <p class="eyebrow eyebrow-slash">PROD 230<span class="sep">/</span>FINAL<span class="sep">/</span>HYDRO</p>
+      </div>
+      <p class="sg-note">White segments, --mint separators, 0.25em tracking, uppercase.</p>
+    </section>
+
+    <!-- ================= 05 DIVIDER + LIST MARKERS ================= -->
+    <section class="sg-section">
+      <p class="sg-label">05 / Chevron divider &amp; plus list markers</p>
+      <div class="panel">
+        <hr class="divider-chevron">
+        <ul class="plus-list" style="margin-top: 2.5rem; max-width: 46ch;">
+          <li>ADD WATER — Fill the reservoir bucket.</li>
+          <li>SET THE BASE — Place the bucket on the base and connect the hose.</li>
+          <li>MOUNT THE TOWER — Lower the tower onto the base.</li>
+        </ul>
+      </div>
+      <p class="sg-note">Divider: icon-chevrons.svg via CSS mask, tinted --mint. Markers: icon-plus.svg as-is.</p>
+    </section>
+
+    <!-- ================= 06 DUOTONE ================= -->
+    <section class="sg-section">
+      <p class="sg-label">06 / Duotone treatment</p>
+      <div class="compare">
+        <figure>
+          <img src="assets/img/renders/full%20render.png" alt="GROW TOWER full render — original">
+          <figcaption>Original</figcaption>
+        </figure>
+        <figure>
+          <figure class="duotone" style="margin: 0;">
+            <img src="assets/img/renders/full%20render.png" alt="GROW TOWER full render — duotone treatment">
+          </figure>
+          <figcaption>.duotone — black → --mint-deep → --mint</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ================= 07 BUTTONS ================= -->
+    <section class="sg-section">
+      <p class="sg-label">07 / Buttons</p>
+      <div class="panel">
+        <div class="btn-row">
+          <a class="btn btn--primary" href="#">HOW IT WORKS</a>
+          <a class="btn btn--primary-alt" href="#">HOW IT WORKS</a>
+          <a class="btn btn--ghost" href="#">DESIGN PROCESS</a>
+        </div>
+      </div>
+      <p class="sg-note">Left: --teal fill, black Neuropol 14px (the "try it" version). Middle: same button in HNLT Bd — pick whichever reads better. Right: ghost, 1px --mint outline. Hover: fill → --mint-deep (primary), fill → --mint (ghost).</p>
+    </section>
+
+    <!-- ================= 08 SECTION-HEADER LOCKUP ================= -->
+    <section class="sg-section">
+      <p class="sg-label">08 / Section-header lockup</p>
+      <div class="panel bg-grid">
+        <header class="section-header">
+          <p class="eyebrow">AEROWAY HYDROPONICS</p>
+          <p class="title">HOW IT WORKS</p>
+          <div class="rule"></div>
+        </header>
+      </div>
+      <p class="sg-note">Eyebrow + Neuropol display title + 4px --mint rule, shown on the .bg-grid utility (64px cells, 8% mint).</p>
+    </section>
+
+  </div>
+</body>
+</html>
