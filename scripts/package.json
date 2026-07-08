@@ -1,0 +1,12 @@
+{
+  "name": "growtower-scripts",
+  "private": true,
+  "type": "module",
+  "description": "One-off asset tooling for GROW TOWER. Not part of the site build — the site deploys as-is.",
+  "dependencies": {
+    "sharp": "^0.34.2"
+  },
+  "allowScripts": {
+    "sharp@0.34.5": true
+  }
+}
