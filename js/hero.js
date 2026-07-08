@@ -3,12 +3,14 @@
    GROW TOWER — hero: 3D scroll-scrub
    Idle rotation (~60s/rev) + GSAP ScrollTrigger scrub adding
    180° and a camera pull-back across 150vh. Falls back to a
-   static render on mobile, reduced-motion, or WebGL failure.
+   render on mobile, reduced-motion, or WebGL failure; when the
+   fallback is the visual and motion is allowed, it gets ambient
+   Ken Burns + scroll parallax (static otherwise).
    ============================================================ */
 
 const hero = document.querySelector(".hero");
 const canvas = document.querySelector(".hero__canvas");
-const fallbackImg = document.querySelector(".hero__fallback");
+const fallbackEl = document.querySelector(".hero__fallback");
 
 const motionOK = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const isMobile = window.matchMedia("(max-width: 768px)").matches;
@@ -43,6 +45,66 @@ function runIntro(visualEl) {
       { opacity: 1, y: 0, duration: 0.4, stagger: 0.1 },
       1.35
     ); // last tween ends ≈ 1.95s
+}
+
+/* ---- fallback ambient motion ---------------------------------
+   Ken Burns on the render (scale 1 -> 1.08 with a few px of
+   drift, ~20s, infinite alternate) inside its overflow-hidden
+   frame, plus a subtle parallax: the frame trails the foreground
+   text by up to 40px as the hero scrolls out. The Ken Burns
+   tween runs only while the hero is onscreen. Never called under
+   prefers-reduced-motion, so the render stays a static frame. */
+function startAmbient() {
+  if (!hero || !fallbackEl || !motionOK) return;
+  if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") return;
+  const img = fallbackEl.querySelector("img");
+  if (!img) return;
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  // Scales the img; the intro tween scales the wrapper — separate
+  // elements, so the two never fight over the same transform.
+  const kenBurns = gsap.fromTo(
+    img,
+    { scale: 1, x: 0, y: 0 },
+    {
+      scale: 1.08,
+      x: -8,
+      y: 5,
+      duration: 20,
+      ease: "sine.inOut",
+      repeat: -1,
+      yoyo: true,
+      paused: true,
+      transformOrigin: "50% 50%",
+    }
+  );
+
+  // GSAP folds this y into the wrapper's existing centering
+  // translate, so the frame stays centered while it trails.
+  gsap.fromTo(fallbackEl, { y: 0 }, {
+    y: 40,
+    ease: "none",
+    scrollTrigger: {
+      trigger: hero,
+      start: "top top",
+      end: "bottom top",
+      scrub: true,
+    },
+  });
+
+  ScrollTrigger.create({
+    trigger: hero,
+    start: "top bottom",
+    end: "bottom top",
+    onToggle(self) {
+      if (self.isActive) {
+        kenBurns.play();
+      } else {
+        kenBurns.pause();
+      }
+    },
+  });
 }
 
 /* ---- 3D scene ------------------------------------------------ */
@@ -207,7 +269,8 @@ async function init3D() {
 (async () => {
   try {
     const ok = await init3D();
-    runIntro(ok ? canvas : fallbackImg);
+    if (!ok) startAmbient();
+    runIntro(ok ? canvas : fallbackEl);
   } catch (e) {
     revealNow();
   }

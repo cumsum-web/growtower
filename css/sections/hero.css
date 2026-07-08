@@ -55,15 +55,53 @@
   display: block;
 }
 
+/* Fallback render frame. The img inside gets the GSAP Ken Burns
+   scale/drift (js/hero.js); overflow keeps it framed. Without JS
+   or with reduced motion nothing transforms — a static framed
+   render. */
 .hero__fallback {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+  overflow: hidden;
+  z-index: 2;
+}
+
+.hero__fallback img {
   max-height: 72vh;
   max-width: 90vw;
   width: auto;
+  will-change: transform;
+}
+
+/* Cinematic veil on the framed render — faint mint vignette over
+   light monochrome grain (SVG noise, black/white only). Pseudo
+   elements need a z-index to sit above the static img. */
+.hero__fallback::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  mix-blend-mode: overlay;
+  opacity: 0.06;
+}
+
+.hero__fallback::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    transparent 62%,
+    color-mix(in srgb, var(--mint-deep) 55%, transparent) 100%
+  );
+  mix-blend-mode: multiply;
 }
 
 .hero--3d .hero__fallback {
@@ -166,7 +204,7 @@
     width: 96vw;
   }
 
-  .hero__fallback {
+  .hero__fallback img {
     max-height: 60vh;
   }
 }
