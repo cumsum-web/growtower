@@ -52,23 +52,25 @@ function revealNow() {
    time this runs. */
 function dissolveWordmark() {
   if (glyphBurst) glyphBurst();
+  // ticks escalate (3 -> 6 -> 8 -> 10px) so the glitch reads as
+  // building instability instead of arriving at full violence
   gsap.timeline()
-    .set(wm, { x: -8, ...sh("12px 0 0 var(--teal)") }, 0)
-    .to(wm, { opacity: 0.25, duration: 0.06, ease: "none" }, 0)
-    .set(wm, { x: 10, ...sh("-9px 0 0 var(--teal)") }, 0.06)
-    .to(wm, { opacity: 1, duration: 0.05, ease: "none" }, 0.06)
-    .set(wm, { x: -5, ...sh("7px 0 0 var(--teal)") }, 0.11)
-    .to(wm, { opacity: 0.4, duration: 0.05, ease: "none" }, 0.11)
-    .set(wm, { x: 0, ...sh("-5px 0 0 var(--teal)") }, 0.16)
-    .to(wm, { opacity: 1, duration: 0.04, ease: "none" }, 0.16)
+    .set(wm, { x: -3, ...sh("5px 0 0 var(--teal)") }, 0)
+    .to(wm, { opacity: 0.55, duration: 0.05, ease: "none" }, 0)
+    .set(wm, { x: 6, ...sh("-8px 0 0 var(--teal)") }, 0.07)
+    .to(wm, { opacity: 1, duration: 0.05, ease: "none" }, 0.07)
+    .set(wm, { x: -8, ...sh("10px 0 0 var(--teal)") }, 0.13)
+    .to(wm, { opacity: 0.3, duration: 0.05, ease: "none" }, 0.13)
+    .set(wm, { x: 10, ...sh("-12px 0 0 var(--teal)") }, 0.19)
+    .to(wm, { opacity: 1, duration: 0.04, ease: "none" }, 0.19)
     .to(wm, {
       scaleY: 0.04,
       scaleX: 1.1,
       opacity: 0,
       duration: 0.22,
       ease: "power3.in",
-    }, 0.22)
-    .set(wm, sh("0 0 0 transparent"), 0.5);
+    }, 0.25)
+    .set(wm, sh("0 0 0 transparent"), 0.55);
 }
 
 /* ---- intro: stroboscopic glitch-in (~1.6s) --------------------
@@ -484,7 +486,9 @@ async function init3D() {
           (Math.random() - 0.5) * W * 0.015
         ),
         rotSpeed: (Math.random() - 0.5) * 0.7,
-        start: 1.0 + Math.random() * 0.4, // wakes as the strobe thins out
+        // even wake spacing: the strobe hands off to the float
+        // continuously instead of drifters arriving in a clump
+        start: 0.95 + i * 0.05,
         // deaths cascade one by one — fast and staggered, no slow fade
         life: 1.3 + i * 0.22 + Math.random() * 0.15,
         dim: 1, // stepped dropout, re-rolled on strobe boundaries
@@ -638,15 +642,24 @@ async function init3D() {
         const idx = Math.floor(elapsed / STEP);
         if (idx !== lastIdx) {
           lastIdx = idx;
-          // everything decays toward stillness as p -> 1
+          // everything decays toward stillness as p -> 1; the tail
+          // (settle) steps props out one by one so nothing is left
+          // to pop off mid-frame at the DUR cutoff
+          const settle = Math.max(0, (p - 0.75) / 0.25);
           this.rotOffset = (Math.random() - 0.5) * 1.1 * (1 - p);
-          ghost.visible = Math.random() < 0.75 * (1 - p) + 0.2;
+          ghost.visible = settle < 0.6 && Math.random() < 0.75 * (1 - p) + 0.2;
+          if (ghost.visible) wireMat.opacity = 0.55 * (1 - settle);
           ghost.position.x = baseX + (Math.random() - 0.5) * s * 0.06 * (1 - p);
           ghost.rotation.y = (Math.random() - 0.5) * 0.3;
           // occasional whole-model dropout early on
           model.visible = p > 0.35 || Math.random() > 0.25;
-          // sketch sheets pop in and out, thinning as p -> 1
-          for (const pn of panels) {
+          // sketch sheets pop in and out, thinning as p -> 1,
+          // then retire in a stagger through the settle window
+          panels.forEach((pn, j) => {
+            if (settle > 0.15 + j * 0.28) {
+              pn.visible = false;
+              return;
+            }
             const r = Math.random();
             if (!pn.visible) {
               if (r < 0.5 * (1 - p) + 0.1) {
@@ -656,7 +669,7 @@ async function init3D() {
             } else if (r < 0.45) {
               pn.visible = false;
             }
-          }
+          });
         }
         if (elapsed >= DUR) {
           model.visible = true;
