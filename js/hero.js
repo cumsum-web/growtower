@@ -14,10 +14,10 @@
    triangles, chevrons, corner brackets, one targeting reticle)
    popping around the baseline with no easing — faction-intro
    motion language — plus a flickering scanline. Teal drifter
-   glyphs linger after the strobe, floating free and slowly
-   fading. Fallback mode gets the jitter and collapse alone;
-   reduced motion keeps the wordmark (a timed vanish is motion,
-   so static = visible).
+   glyphs linger after the strobe, floating free, then flicker
+   out fast in a staggered cascade. Fallback mode gets the
+   jitter and collapse alone; reduced motion keeps the wordmark
+   (a timed vanish is motion, so static = visible).
    ============================================================ */
 
 const hero = document.querySelector(".hero");
@@ -35,33 +35,38 @@ const WORDMARK_HOLD = 1.5; // seconds the wordmark stays once its wipe completes
 
 let glyphBurst = null; // set by init3D once the scene can host the burst
 
+const wm = ".hero__wordmark";
+const sh = (v) => ({ "--wm-shadow": v }); // chromatic teal offset
+
 function revealNow() {
   document.documentElement.classList.remove("hero-intro");
 }
 
 /* Wordmark exit: glyph burst (3D mode only) while the wordmark
-   itself jitters sideways in hard snaps, flickers, and collapses
-   to a bright line, CRT-style. Only ever scheduled from the
+   itself jitters sideways in hard snaps — teal shadow flipping
+   sides with each snap — then collapses to a bright line,
+   CRT-style, ghost still attached. Only ever scheduled from the
    intro timeline, so gsap exists and motion is allowed by the
    time this runs. */
 function dissolveWordmark() {
   if (glyphBurst) glyphBurst();
   gsap.timeline()
-    .set(".hero__wordmark", { x: -8 }, 0)
-    .to(".hero__wordmark", { opacity: 0.25, duration: 0.06, ease: "none" }, 0)
-    .set(".hero__wordmark", { x: 10 }, 0.06)
-    .to(".hero__wordmark", { opacity: 1, duration: 0.05, ease: "none" }, 0.06)
-    .set(".hero__wordmark", { x: -5 }, 0.11)
-    .to(".hero__wordmark", { opacity: 0.4, duration: 0.05, ease: "none" }, 0.11)
-    .set(".hero__wordmark", { x: 0 }, 0.16)
-    .to(".hero__wordmark", { opacity: 1, duration: 0.04, ease: "none" }, 0.16)
-    .to(".hero__wordmark", {
+    .set(wm, { x: -8, ...sh("12px 0 0 var(--teal)") }, 0)
+    .to(wm, { opacity: 0.25, duration: 0.06, ease: "none" }, 0)
+    .set(wm, { x: 10, ...sh("-9px 0 0 var(--teal)") }, 0.06)
+    .to(wm, { opacity: 1, duration: 0.05, ease: "none" }, 0.06)
+    .set(wm, { x: -5, ...sh("7px 0 0 var(--teal)") }, 0.11)
+    .to(wm, { opacity: 0.4, duration: 0.05, ease: "none" }, 0.11)
+    .set(wm, { x: 0, ...sh("-5px 0 0 var(--teal)") }, 0.16)
+    .to(wm, { opacity: 1, duration: 0.04, ease: "none" }, 0.16)
+    .to(wm, {
       scaleY: 0.04,
-      scaleX: 1.06,
+      scaleX: 1.1,
       opacity: 0,
-      duration: 0.32,
+      duration: 0.22,
       ease: "power3.in",
-    }, 0.22);
+    }, 0.22)
+    .set(wm, sh("0 0 0 transparent"), 0.5);
 }
 
 /* ---- intro: stroboscopic glitch-in (~1.6s) --------------------
@@ -75,8 +80,6 @@ function runIntro(visualEl) {
     return;
   }
   clearTimeout(window.__heroIntroTimer); // timeline owns the reveal now
-  const wm = ".hero__wordmark";
-  const sh = (v) => ({ "--wm-shadow": v }); // chromatic teal offset
   gsap.timeline({ onComplete: revealNow })
     // grid: flicker on
     .set(".hero__grid", { opacity: 1 }, 0.10)
@@ -449,8 +452,9 @@ async function init3D() {
           (Math.random() - 0.5) * W * 0.015
         ),
         rotSpeed: (Math.random() - 0.5) * 0.7,
-        start: 1.0 + Math.random() * 0.5, // wakes as the strobe thins out
-        life: 3.5 + Math.random() * 3,
+        start: 1.0 + Math.random() * 0.4, // wakes as the strobe thins out
+        // deaths cascade one by one — fast and staggered, no slow fade
+        life: 1.3 + i * 0.22 + Math.random() * 0.15,
         dim: 1, // stepped dropout, re-rolled on strobe boundaries
       });
     }
@@ -499,7 +503,8 @@ async function init3D() {
         scanMat.color.copy(WHITE).lerp(TEAL, sk);
         scanMat.opacity = (1 - sk) * (Math.floor(elapsed * 24) % 2 ? 0.45 : 1);
 
-        // drifters: smooth float, slow spin, long fade — teal only
+        // drifters: smooth float at full presence, then death throes —
+        // a hard 24Hz strobe with a spin-up instead of a fade
         for (const d of drifters) {
           const t = elapsed - d.start;
           if (t < 0 || t > d.life) {
@@ -508,9 +513,11 @@ async function init3D() {
           }
           d.obj.visible = true;
           d.obj.position.addScaledVector(d.vel, dt);
-          d.obj.rotation.z += d.rotSpeed * dt;
-          const k = t / d.life;
-          d.obj.material.opacity = (k < 0.4 ? 1 : 1 - (k - 0.4) / 0.6) * d.dim;
+          const dying = t / d.life > 0.8;
+          d.obj.rotation.z += d.rotSpeed * (dying ? 4 : 1) * dt;
+          d.obj.material.opacity = dying
+            ? (Math.floor(elapsed * 24) % 2 ? 1 : 0.1)
+            : d.dim;
         }
 
         if (elapsed >= endAt) {
