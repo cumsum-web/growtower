@@ -8,12 +8,14 @@
    Ken Burns + scroll parallax (static otherwise).
 
    Wordmark exit: WORDMARK_HOLD seconds after its wipe-in
-   completes, the wordmark flickers and collapses CRT-style. In
-   3D mode the collapse rides a vector water splash — faceted
-   teal/mint droplet shards, waterline rings, and a flickering
-   scanline in the tower scene. Fallback mode gets the flicker
-   and collapse alone; reduced motion keeps the wordmark (a
-   timed vanish is motion, so the static state is visible).
+   completes, the wordmark glitch-jitters, flickers, and
+   collapses CRT-style. In 3D mode the collapse rides a
+   stroboscopic burst of flat vector glyphs (rings, plus marks,
+   triangles, chevrons, corner brackets, one targeting reticle)
+   popping around the baseline with no easing — faction-intro
+   motion language — plus a flickering scanline. Fallback mode
+   gets the jitter and collapse alone; reduced motion keeps the
+   wordmark (a timed vanish is motion, so static = visible).
    ============================================================ */
 
 const hero = document.querySelector(".hero");
@@ -29,30 +31,35 @@ const scrub = { angle: 0, pull: 0 };   // written by ScrollTrigger, read by rend
 
 const WORDMARK_HOLD = 1.5; // seconds the wordmark stays once its wipe completes
 
-let splashBurst = null; // set by init3D once the scene can host the splash
+let glyphBurst = null; // set by init3D once the scene can host the burst
 
 function revealNow() {
   document.documentElement.classList.remove("hero-intro");
 }
 
-/* Wordmark exit: splash (3D mode only) while the wordmark itself
-   flickers twice and collapses to a bright line, CRT-style. Only
-   ever scheduled from the intro timeline, so gsap exists and
-   motion is allowed by the time this runs. */
+/* Wordmark exit: glyph burst (3D mode only) while the wordmark
+   itself jitters sideways in hard snaps, flickers, and collapses
+   to a bright line, CRT-style. Only ever scheduled from the
+   intro timeline, so gsap exists and motion is allowed by the
+   time this runs. */
 function dissolveWordmark() {
-  if (splashBurst) splashBurst();
+  if (glyphBurst) glyphBurst();
   gsap.timeline()
-    .to(".hero__wordmark", { opacity: 0.25, duration: 0.06, ease: "none" })
-    .to(".hero__wordmark", { opacity: 1, duration: 0.05, ease: "none" })
-    .to(".hero__wordmark", { opacity: 0.4, duration: 0.05, ease: "none" })
-    .to(".hero__wordmark", { opacity: 1, duration: 0.04, ease: "none" })
+    .set(".hero__wordmark", { x: -8 }, 0)
+    .to(".hero__wordmark", { opacity: 0.25, duration: 0.06, ease: "none" }, 0)
+    .set(".hero__wordmark", { x: 10 }, 0.06)
+    .to(".hero__wordmark", { opacity: 1, duration: 0.05, ease: "none" }, 0.06)
+    .set(".hero__wordmark", { x: -5 }, 0.11)
+    .to(".hero__wordmark", { opacity: 0.4, duration: 0.05, ease: "none" }, 0.11)
+    .set(".hero__wordmark", { x: 0 }, 0.16)
+    .to(".hero__wordmark", { opacity: 1, duration: 0.04, ease: "none" }, 0.16)
     .to(".hero__wordmark", {
       scaleY: 0.04,
       scaleX: 1.06,
       opacity: 0,
       duration: 0.32,
       ease: "power3.in",
-    });
+    }, 0.22);
 }
 
 /* ---- intro: grid → wordmark wipe → visual → UI text (<2s) ---- */
@@ -77,7 +84,7 @@ function runIntro(visualEl) {
       { opacity: 1, y: 0, duration: 0.4, stagger: 0.1 },
       1.35
     ) // last tween ends ≈ 1.95s
-    // wordmark wipe ends at 0.95 — hold it, then splash it away
+    // wordmark wipe ends at 0.95 — hold it, then glitch it out
     .call(() => gsap.delayedCall(WORDMARK_HOLD, dissolveWordmark), [], 0.95);
 }
 
@@ -239,14 +246,15 @@ async function init3D() {
   camera.position.set(0, s * 0.06, baseZ);
   camera.lookAt(0, 0, 0);
 
-  /* ---- wordmark splash ---------------------------------------
-     One burst of faceted droplet shards plus expanding waterline
-     rings and a flickering scanline along the wordmark's
-     baseline, drawn as additive lines so they glow on the black
-     grid and fade out by darkening to black. Teal carries the
-     burst (the product accent), mint reads as rim light. Colors
-     from css/tokens.css. */
-  let splash = null;
+  /* ---- wordmark glyph burst ----------------------------------
+     Faction-intro-style exit: a swarm of flat vector glyphs —
+     rings, plus marks, triangles, chevrons, corner brackets and
+     one targeting reticle — pops stroboscopically around the
+     wordmark's baseline while it flickers out. Motion is
+     quantized to STEP with no easing: glyphs appear, hold a few
+     frames, jump or vanish. Additive draw in token colors; teal
+     leads, mint reads as rim light. Colors from css/tokens.css. */
+  let burst = null;
 
   const MINT = new THREE.Color(0x8fcfb0);  /* --mint      */
   const DEEP = new THREE.Color(0x5d8673);  /* --mint-deep */
@@ -261,55 +269,117 @@ async function init3D() {
     return camera.position.clone().addScaledVector(dir, t);
   }
 
-  function makeSplash(left, right) {
+  function makeGlyphBurst(left, right) {
     const band = new THREE.Vector3().subVectors(right, left);
     const W = band.length();
-    const V = W * 0.22; // launch speed scale
-    const G = -V * 2.4; // gravity
-    const N = 240;
+    const center = left.clone().addScaledVector(band, 0.5);
+    const STEP = 1 / 18; // strobe quantum — all glyph changes snap to this
 
-    const drops = [];
-    for (let i = 0; i < N; i++) {
-      const pick = Math.random();
-      const vel = new THREE.Vector3(
-        (Math.random() - 0.5) * 0.7 * V,
-        (0.55 + Math.random() * 0.95) * V,
-        (Math.random() - 0.5) * 0.3 * V
-      );
-      // fixed sideways kink turns each streak into a faceted shard
-      const side = new THREE.Vector3(-vel.z, 0, vel.x);
-      if (side.lengthSq() < 1e-6) side.set(1, 0, 0);
-      const kink = side.normalize().multiplyScalar((Math.random() - 0.5) * V * 0.06);
-      const d = {
-        pos: left.clone().addScaledVector(band, Math.random()),
-        shown: new THREE.Vector3(), // rendered position (lags when glitching)
-        vel,
-        kink,
-        birth: Math.random() * 0.25,
-        life: 0.9 + Math.random() * 0.6,
-        glitch: Math.random() < 0.3, // stepped ~12fps digital stutter
-        lastStep: -1,
-        color: pick < 0.45 ? TEAL : pick < 0.75 ? MINT : pick < 0.9 ? DEEP : WHITE,
-      };
-      d.shown.copy(d.pos);
-      drops.push(d);
+    const group = new THREE.Group();
+    scene.add(group);
+
+    const palette = [TEAL, TEAL, TEAL, MINT, MINT, WHITE, DEEP]; // weighted
+
+    function lineMat(c) {
+      return new THREE.LineBasicMaterial({
+        color: c,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        depthWrite: false,
+      });
+    }
+    function fillMat(c) {
+      return new THREE.MeshBasicMaterial({
+        color: c,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      });
     }
 
-    // two segments per droplet (head->kinked mid, mid->tail): a shard
-    const pos = new Float32Array(N * 12);
-    const col = new Float32Array(N * 12);
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
-    const mat = new THREE.LineBasicMaterial({
-      vertexColors: true,
-      blending: THREE.AdditiveBlending,
-      transparent: true,
-      depthWrite: false,
-    });
-    const lines = new THREE.LineSegments(geo, mat);
-    lines.frustumCulled = false;
-    scene.add(lines);
+    /* unit-size glyph geometries, scaled per instance */
+    function ringGeo(segs) {
+      const pts = [];
+      for (let a = 0; a < segs; a++) {
+        const th = (a / segs) * Math.PI * 2;
+        pts.push(new THREE.Vector3(Math.cos(th), Math.sin(th), 0));
+      }
+      return new THREE.BufferGeometry().setFromPoints(pts);
+    }
+    function triGeo() {
+      return new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 1, 0),
+        new THREE.Vector3(0.87, -0.5, 0),
+        new THREE.Vector3(-0.87, -0.5, 0),
+      ]);
+    }
+    function chevGeo() {
+      return new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-0.5, 0.8, 0),
+        new THREE.Vector3(0.5, 0, 0),
+        new THREE.Vector3(-0.5, -0.8, 0),
+      ]);
+    }
+    function bracketGeo() {
+      // four corner ticks of a square, like a targeting frame
+      const v = [];
+      for (const [x, y] of [[-1, 1], [1, 1], [1, -1], [-1, -1]]) {
+        v.push(new THREE.Vector3(x, y, 0), new THREE.Vector3(x - Math.sign(x) * 0.4, y, 0));
+        v.push(new THREE.Vector3(x, y, 0), new THREE.Vector3(x, y - Math.sign(y) * 0.4, 0));
+      }
+      return new THREE.BufferGeometry().setFromPoints(v);
+    }
+    function plusGeo() {
+      // filled plus, same silhouette as icon-plus.svg
+      const a = 0.33;
+      const s = new THREE.Shape();
+      s.moveTo(-a, 1); s.lineTo(a, 1); s.lineTo(a, a); s.lineTo(1, a);
+      s.lineTo(1, -a); s.lineTo(a, -a); s.lineTo(a, -1); s.lineTo(-a, -1);
+      s.lineTo(-a, -a); s.lineTo(-1, -a); s.lineTo(-1, a); s.lineTo(-a, a);
+      return new THREE.ShapeGeometry(s);
+    }
+
+    const glyphs = [];
+    const COUNT = 26;
+    for (let i = 0; i < COUNT; i++) {
+      const c = palette[(Math.random() * palette.length) | 0];
+      const kind = Math.random();
+      let obj;
+      if (kind < 0.22) obj = new THREE.LineLoop(ringGeo(28), lineMat(c));
+      else if (kind < 0.42) obj = new THREE.Mesh(plusGeo(), fillMat(c));
+      else if (kind < 0.62) obj = new THREE.LineLoop(triGeo(), lineMat(c));
+      else if (kind < 0.82) obj = new THREE.Line(chevGeo(), lineMat(c));
+      else obj = new THREE.LineSegments(bracketGeo(), lineMat(c));
+      obj.frustumCulled = false;
+      obj.visible = false;
+      group.add(obj);
+      glyphs.push({
+        obj,
+        size: W * (0.018 + Math.random() * 0.05),
+        die: 0.55 + Math.random() * 0.75, // stops re-appearing after this
+      });
+    }
+
+    // one large targeting reticle that blinks over the band center
+    const reticle = new THREE.Group();
+    reticle.add(new THREE.LineLoop(ringGeo(48), lineMat(WHITE)));
+    const rBrackets = new THREE.LineSegments(bracketGeo(), lineMat(WHITE));
+    rBrackets.scale.setScalar(1.35);
+    reticle.add(rBrackets);
+    reticle.position.copy(center);
+    reticle.scale.setScalar(W * 0.085);
+    reticle.visible = false;
+    group.add(reticle);
+
+    // hard placement, no tween: position in the band, snapped rotation
+    function place(g) {
+      g.obj.position.copy(left)
+        .addScaledVector(band, Math.random())
+        .add(new THREE.Vector3(0, (Math.random() - 0.5) * W * 0.3, 0));
+      g.obj.rotation.z = ((Math.random() * 4) | 0) * (Math.PI / 2);
+      g.obj.scale.setScalar(g.size * (0.6 + Math.random() * 0.9));
+    }
 
     // scanline: the waterline flares white, cools to teal, dies
     const scanMat = new THREE.LineBasicMaterial({
@@ -328,118 +398,66 @@ async function init3D() {
     scan.frustumCulled = false;
     scene.add(scan);
 
-    // flat elliptical rings that ripple out from the waterline
-    const rings = [0.22, 0.5, 0.78].map((f, i) => {
-      const pts = [];
-      for (let a = 0; a <= 48; a++) {
-        const th = (a / 48) * Math.PI * 2;
-        pts.push(new THREE.Vector3(Math.cos(th), 0, Math.sin(th) * 0.45));
-      }
-      const ring = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints(pts),
-        new THREE.LineBasicMaterial({
-          color: TEAL,
-          blending: THREE.AdditiveBlending,
-          transparent: true,
-          depthWrite: false,
-        })
-      );
-      ring.position.copy(left).addScaledVector(band, f);
-      ring.frustumCulled = false;
-      ring.userData = { delay: i * 0.08, grow: W * (0.16 + 0.1 * Math.random()) };
-      scene.add(ring);
-      return ring;
-    });
-
     let elapsed = 0;
-    const DUR = 1.9;
+    let lastIdx = -1;
+    const DUR = 1.5;
 
     return {
       update(dt) {
         elapsed += dt;
 
-        for (let i = 0; i < N; i++) {
-          const d = drops[i];
-          const t = elapsed - d.birth;
-          const alive = t > 0 && t < d.life;
-          if (alive) {
-            d.vel.y += G * dt;
-            d.pos.addScaledVector(d.vel, dt);
-            // glitching shards re-render at ~12fps; the rest track
-            if (!d.glitch || elapsed - d.lastStep >= 0.085) {
-              d.shown.copy(d.pos);
-              d.lastStep = elapsed;
+        // all glyph changes happen on strobe boundaries — hard pops
+        const idx = Math.floor(elapsed / STEP);
+        if (idx !== lastIdx) {
+          lastIdx = idx;
+          for (const g of glyphs) {
+            if (elapsed > g.die) {
+              g.obj.visible = false;
+              continue;
+            }
+            const r = Math.random();
+            if (!g.obj.visible) {
+              if (r < 0.5) {
+                place(g);
+                g.obj.visible = true;
+              }
+            } else if (r < 0.3) {
+              g.obj.visible = false;
+            } else if (r < 0.65) {
+              place(g); // jump cut, no tween
             }
           }
-          // fade: full until 55% of life, then ease to black
-          const k = t / d.life;
-          const a = !alive ? 0 : k < 0.55 ? 1 : 1 - (k - 0.55) / 0.45;
-          const o = i * 12;
-          const mx = d.shown.x - d.vel.x * 0.028 + d.kink.x;
-          const my = d.shown.y - d.vel.y * 0.028 + d.kink.y;
-          const mz = d.shown.z - d.vel.z * 0.028 + d.kink.z;
-          // head -> mid
-          pos[o] = d.shown.x;
-          pos[o + 1] = d.shown.y;
-          pos[o + 2] = d.shown.z;
-          pos[o + 3] = mx;
-          pos[o + 4] = my;
-          pos[o + 5] = mz;
-          // mid -> tail
-          pos[o + 6] = mx;
-          pos[o + 7] = my;
-          pos[o + 8] = mz;
-          pos[o + 9] = d.shown.x - d.vel.x * 0.06;
-          pos[o + 10] = d.shown.y - d.vel.y * 0.06;
-          pos[o + 11] = d.shown.z - d.vel.z * 0.06;
-          // head + mid bright, tail dim = tapered shard
-          for (let v = 0; v < 4; v++) {
-            const f = v < 3 ? a : a * 0.3;
-            col[o + v * 3] = d.color.r * f;
-            col[o + v * 3 + 1] = d.color.g * f;
-            col[o + v * 3 + 2] = d.color.b * f;
-          }
+          // reticle blinks over the center on alternating steps
+          reticle.visible = elapsed > 0.35 && elapsed < 1.1 && idx % 2 === 0;
+          if (reticle.visible) reticle.rotation.z = ((idx % 4) * Math.PI) / 8;
         }
-        geo.attributes.position.needsUpdate = true;
-        geo.attributes.color.needsUpdate = true;
 
         // scanline: hard flicker while it cools white -> teal
         const sk = Math.min(1, elapsed / 0.3);
         scanMat.color.copy(WHITE).lerp(TEAL, sk);
         scanMat.opacity = (1 - sk) * (Math.floor(elapsed * 24) % 2 ? 0.45 : 1);
 
-        rings.forEach((ring) => {
-          const k = Math.min(1, Math.max(0, elapsed - ring.userData.delay) / 1.1);
-          const e = 1 - Math.pow(1 - k, 3);
-          const r = 0.08 + ring.userData.grow * e;
-          ring.scale.set(r, 1, r);
-          ring.material.opacity = 1 - e;
-        });
-
         if (elapsed >= DUR) {
-          scene.remove(lines);
-          geo.dispose();
-          mat.dispose();
+          scene.remove(group);
+          group.traverse((o) => {
+            if (o.geometry) o.geometry.dispose();
+            if (o.material) o.material.dispose();
+          });
           scene.remove(scan);
           scan.geometry.dispose();
           scanMat.dispose();
-          rings.forEach((ring) => {
-            scene.remove(ring);
-            ring.geometry.dispose();
-            ring.material.dispose();
-          });
-          splash = null;
+          burst = null;
         }
       },
     };
   }
 
-  splashBurst = function () {
-    if (splash) return;
+  glyphBurst = function () {
+    if (burst) return;
     // wordmark box: centered at 42% viewport height, min(92vw, 1400px) wide
     const ndcY = 1 - 2 * 0.42;
     const halfW = 0.85 * Math.min(0.92, 1400 / canvas.clientWidth);
-    splash = makeSplash(ndcAtZ0(-halfW, ndcY), ndcAtZ0(halfW, ndcY));
+    burst = makeGlyphBurst(ndcAtZ0(-halfW, ndcY), ndcAtZ0(halfW, ndcY));
   };
 
   function resize() {
@@ -483,7 +501,7 @@ async function init3D() {
     group.rotation.y = idle + scrub.angle;
     camera.position.z = baseZ + scrub.pull * pullDist;
     camera.lookAt(0, 0, 0);
-    if (splash) splash.update(dt);
+    if (burst) burst.update(dt);
     renderer.render(scene, camera);
   }
 
