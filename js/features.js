@@ -7,13 +7,6 @@
    no animation loop.
    ============================================================ */
 
-// Enable the shared three.js file cache immediately so the hero's GLB
-// request (same module instance, same URL) is fetched exactly once.
-// This script tag sits before js/hero.js, so this runs first.
-import("three").then((m) => {
-  m.Cache.enabled = true;
-}).catch(() => {});
-
 const section = document.querySelector(".features");
 const canvas = document.querySelector(".features__canvas");
 const hotspot = document.querySelector(".features__hotspot");
@@ -21,6 +14,17 @@ const cards = section ? Array.from(section.querySelectorAll(".feature-card")) : 
 
 const motionOK = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const isNarrow = window.matchMedia("(max-width: 900px)").matches;
+
+// Enable the shared three.js file cache so the hero's GLB request
+// (same module instance, same URL) is fetched exactly once. This
+// script tag sits before js/hero.js, so this runs first. Gated:
+// when 3D never initializes (narrow viewport, reduced motion),
+// three.js must not be downloaded at all.
+if (!isNarrow && motionOK) {
+  import("three").then((m) => {
+    m.Cache.enabled = true;
+  }).catch(() => {});
+}
 
 /* Camera presets, one per feature card (order matches the DOM).
    ty  = look-target height, as a fraction of model height (0 = center)
