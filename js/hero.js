@@ -64,29 +64,48 @@ function dissolveWordmark() {
     }, 0.22);
 }
 
-/* ---- intro: grid → wordmark wipe → visual → UI text (<2s) ---- */
+/* ---- intro: stroboscopic glitch-in (~1.6s) --------------------
+   Distinct from the exit's glyph swarm: the intro language is
+   slice-reveal glitches and a teal chromatic shadow that the
+   wordmark sheds as it stabilizes. Every change is a hard set
+   snapped to the timeline; nothing eases. */
 function runIntro(visualEl) {
   if (!motionOK || typeof gsap === "undefined") {
     revealNow();
     return;
   }
   clearTimeout(window.__heroIntroTimer); // timeline owns the reveal now
-  const tl = gsap.timeline({ defaults: { ease: "power2.out" }, onComplete: revealNow });
-  tl.fromTo(".hero__grid", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 0)
-    .fromTo(
-      ".hero__wordmark",
-      { opacity: 1, clipPath: "inset(0 100% 0 0)" },
-      { clipPath: "inset(0 0% 0 0)", duration: 0.65, ease: "power3.inOut" },
-      0.3
-    )
-    .fromTo(visualEl, { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.7 }, 0.85)
-    .fromTo(
-      [".hero__brand", ".hero__card", ".hero__cue"],
-      { opacity: 0, y: 16 },
-      { opacity: 1, y: 0, duration: 0.4, stagger: 0.1 },
-      1.35
-    ) // last tween ends ≈ 1.95s
-    // wordmark wipe ends at 0.95 — hold it, then glitch it out
+  const wm = ".hero__wordmark";
+  const sh = (v) => ({ "--wm-shadow": v }); // chromatic teal offset
+  gsap.timeline({ onComplete: revealNow })
+    // grid: flicker on
+    .set(".hero__grid", { opacity: 1 }, 0.10)
+    .set(".hero__grid", { opacity: 0.3 }, 0.16)
+    .set(".hero__grid", { opacity: 1 }, 0.22)
+    // wordmark: slice-reveal, shadow and x snap around, then settle
+    .set(wm, { opacity: 1, clipPath: "inset(0 100% 0 0)" }, 0)
+    .set(wm, { clipPath: "inset(0 55% 0 0)", x: -6, ...sh("10px 0 0 var(--teal)") }, 0.25)
+    .set(wm, { clipPath: "inset(0 70% 0 0)", x: 4, ...sh("-7px 0 0 var(--teal)") }, 0.31)
+    .set(wm, { clipPath: "inset(0 30% 0 0)", x: -3, ...sh("5px 0 0 var(--teal)") }, 0.38)
+    .set(wm, { opacity: 0.4, clipPath: "inset(0 45% 0 0)" }, 0.45)
+    .set(wm, { opacity: 1, clipPath: "inset(0 12% 0 0)", x: 2, ...sh("-4px 0 0 var(--teal)") }, 0.50)
+    .set(wm, { clipPath: "inset(0 0% 0 0)", x: 0, ...sh("3px 0 0 var(--teal)") }, 0.58)
+    .set(wm, sh("0 0 0 transparent"), 0.70)
+    .set(wm, { x: -2, ...sh("6px 0 0 var(--teal)") }, 0.84) // one last hiccup
+    .set(wm, { x: 0, ...sh("0 0 0 transparent") }, 0.90)
+    // visual: hard pop with one dropped frame
+    .set(visualEl, { opacity: 1 }, 0.90)
+    .set(visualEl, { opacity: 0.25 }, 1.00)
+    .set(visualEl, { opacity: 1 }, 1.05)
+    // UI: staggered pops, each with a dim blip
+    .set(".hero__brand", { opacity: 1 }, 1.15)
+    .set(".hero__brand", { opacity: 0.4 }, 1.22)
+    .set(".hero__brand", { opacity: 1 }, 1.26)
+    .set(".hero__card", { opacity: 1, x: 6 }, 1.32)
+    .set(".hero__card", { opacity: 0.3 }, 1.39)
+    .set(".hero__card", { opacity: 1, x: 0 }, 1.43)
+    .set(".hero__cue", { opacity: 1 }, 1.55)
+    // wordmark stabilizes at 0.90 — hold it, then glitch it out
     .call(() => gsap.delayedCall(WORDMARK_HOLD, dissolveWordmark), [], 0.95);
 }
 

@@ -39,11 +39,14 @@
 
 /* The wordmark SVG ships with unfilled paths (renders default
    black — invisible on the black stage). Paint it white here so
-   the artwork file stays untouched: flatten to black, invert. */
+   the artwork file stays untouched: flatten to black, invert.
+   --wm-shadow is the chromatic teal offset the intro glitch
+   snaps around (js/hero.js); it rides after the invert so the
+   shadow keeps its literal color. */
 .hero__wordmark img {
   width: 100%;
   height: auto;
-  filter: brightness(0) invert(1);
+  filter: brightness(0) invert(1) drop-shadow(var(--wm-shadow, 0 0 0 transparent));
 }
 
 .hero__canvas {
