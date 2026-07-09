@@ -14,10 +14,12 @@
    triangles, chevrons, corner brackets, one targeting reticle)
    popping around the baseline with no easing — faction-intro
    motion language — plus a flickering scanline. Teal drifter
-   glyphs linger after the strobe, floating free, then flicker
-   out fast in a staggered cascade. Fallback mode gets the
-   jitter and collapse alone; reduced motion keeps the wordmark
-   (a timed vanish is motion, so static = visible).
+   glyphs and two blueprint sketch sheets linger after the
+   strobe, floating free, then flicker out fast in a staggered
+   cascade. Design-page sketch panels also strobe beside the
+   model during its entrance. Fallback mode gets the jitter and
+   collapse alone; reduced motion keeps the wordmark (a timed
+   vanish is motion, so static = visible).
    ============================================================ */
 
 const hero = document.querySelector(".hero");
@@ -274,6 +276,33 @@ async function init3D() {
   camera.position.set(0, s * 0.06, baseZ);
   camera.lookAt(0, 0, 0);
 
+  /* ---- blueprint sketch panels -------------------------------
+     Mint-on-black crops of the process book's FINAL DESIGN page
+     (assets/img/generated/sketch-panel-*.webp). Additive draw
+     makes the black paper invisible, leaving floating holo
+     linework. Loaded async — strobe beats simply skip panels
+     that aren't ready yet. */
+  const texLoader = new THREE.TextureLoader();
+  const sketches = [
+    { file: "sketch-panel-full-system.webp", ratio: 2244 / 1550 },
+    { file: "sketch-panel-tower.webp", ratio: 1485 / 1221 },
+    { file: "sketch-panel-resivor.webp", ratio: 1402 / 1287 },
+  ].map((sk) => {
+    const tex = texLoader.load("assets/img/generated/" + sk.file);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return { tex, ratio: sk.ratio };
+  });
+
+  function sketchMat(tex, opacity) {
+    return new THREE.MeshBasicMaterial({
+      map: tex,
+      blending: THREE.AdditiveBlending,
+      transparent: true,
+      opacity,
+      depthWrite: false,
+    });
+  }
+
   /* ---- wordmark glyph burst ----------------------------------
      Faction-intro-style exit: a swarm of flat vector glyphs —
      rings, plus marks, triangles, chevrons, corner brackets and
@@ -433,20 +462,28 @@ async function init3D() {
        that hangs in the air after the burst. Smooth motion here
        is deliberate contrast to the strobe glyphs. */
     const drifters = [];
-    for (let i = 0; i < 9; i++) {
-      const kind = Math.random();
+    for (let i = 0; i < 11; i++) {
+      const isSheet = i > 8; // last two: blueprint sketch panels, dying last
       let obj;
-      if (kind < 0.3) obj = new THREE.LineLoop(ringGeo(28), lineMat(TEAL));
-      else if (kind < 0.55) obj = new THREE.LineLoop(triGeo(), lineMat(TEAL));
-      else if (kind < 0.8) obj = new THREE.Line(chevGeo(), lineMat(TEAL));
-      else obj = new THREE.LineSegments(bracketGeo(), lineMat(TEAL));
+      if (isSheet) {
+        const sk = sketches[i - 9];
+        obj = new THREE.Mesh(new THREE.PlaneGeometry(1, sk.ratio), sketchMat(sk.tex, 1));
+      } else {
+        const kind = Math.random();
+        if (kind < 0.3) obj = new THREE.LineLoop(ringGeo(28), lineMat(TEAL));
+        else if (kind < 0.55) obj = new THREE.LineLoop(triGeo(), lineMat(TEAL));
+        else if (kind < 0.8) obj = new THREE.Line(chevGeo(), lineMat(TEAL));
+        else obj = new THREE.LineSegments(bracketGeo(), lineMat(TEAL));
+      }
       obj.frustumCulled = false;
       obj.visible = false;
       obj.position.copy(left)
         .addScaledVector(band, Math.random())
         .add(new THREE.Vector3(0, (Math.random() - 0.5) * W * 0.4, 0));
-      obj.rotation.z = Math.random() * Math.PI * 2;
-      obj.scale.setScalar(W * (0.015 + Math.random() * 0.035));
+      obj.rotation.z = isSheet ? 0 : Math.random() * Math.PI * 2;
+      obj.scale.setScalar(
+        isSheet ? W * (0.055 + Math.random() * 0.03) : W * (0.015 + Math.random() * 0.035)
+      );
       group.add(obj);
       drifters.push({
         obj,
@@ -455,7 +492,7 @@ async function init3D() {
           (0.02 + Math.random() * 0.025) * W, // gentle rise
           (Math.random() - 0.5) * W * 0.015
         ),
-        rotSpeed: (Math.random() - 0.5) * 0.7,
+        rotSpeed: (Math.random() - 0.5) * (isSheet ? 0.25 : 0.7),
         start: 1.0 + Math.random() * 0.4, // wakes as the strobe thins out
         // deaths cascade one by one — fast and staggered, no slow fade
         life: 1.3 + i * 0.22 + Math.random() * 0.15,
@@ -550,9 +587,10 @@ async function init3D() {
   /* ---- model entrance glitch ---------------------------------
      Runs as the intro pops the canvas in: a teal wireframe ghost
      of the tower flickers and side-snaps around the model while
-     its rotation jumps in decaying steps and the model itself
-     drops early frames — then everything locks into the smooth
-     idle spin and the ghost is disposed. */
+     its rotation jumps in decaying steps, the model drops early
+     frames, and the design-page sketch panels strobe beside it —
+     blueprints materializing into product. Then everything locks
+     into the smooth idle spin and the props are disposed. */
   let entrance = null;
 
   modelGlitch = function () {
@@ -575,6 +613,27 @@ async function init3D() {
     group.add(ghost);
     const baseX = model.position.x; // keep the centering offset
 
+    // blueprint sheets flash beside the tower while it seeks
+    const panels = sketches.map((sk) => {
+      const m = new THREE.Mesh(
+        new THREE.PlaneGeometry(1, sk.ratio),
+        sketchMat(sk.tex, 0.9)
+      );
+      m.visible = false;
+      m.frustumCulled = false;
+      scene.add(m); // in scene, not group: sheets don't spin with the model
+      return m;
+    });
+    function placePanel(m) {
+      const side = Math.random() < 0.5 ? -1 : 1;
+      m.position.set(
+        side * s * (0.45 + Math.random() * 0.4),
+        (Math.random() - 0.5) * s * 0.6,
+        (Math.random() - 0.5) * s * 0.3
+      );
+      m.scale.setScalar(s * (0.35 + Math.random() * 0.25));
+    }
+
     const STEP = 1 / 18;
     const DUR = 0.75;
     let elapsed = 0;
@@ -595,11 +654,28 @@ async function init3D() {
           ghost.rotation.y = (Math.random() - 0.5) * 0.3;
           // occasional whole-model dropout early on
           model.visible = p > 0.35 || Math.random() > 0.25;
+          // sketch sheets pop in and out, thinning as p -> 1
+          for (const pn of panels) {
+            const r = Math.random();
+            if (!pn.visible) {
+              if (r < 0.5 * (1 - p) + 0.1) {
+                placePanel(pn);
+                pn.visible = true;
+              }
+            } else if (r < 0.45) {
+              pn.visible = false;
+            }
+          }
         }
         if (elapsed >= DUR) {
           model.visible = true;
           group.remove(ghost);
           wireMat.dispose(); // geometry is shared with the model — keep it
+          panels.forEach((m) => {
+            scene.remove(m);
+            m.geometry.dispose();
+            m.material.dispose(); // textures stay — the outro reuses them
+          });
           this.rotOffset = 0;
           entrance = null;
         }

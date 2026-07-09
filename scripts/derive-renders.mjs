@@ -15,7 +15,7 @@
    ============================================================ */
 
 import sharp from "sharp";
-import { mkdir } from "node:fs/promises";
+import { mkdir, access } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -65,6 +65,18 @@ const ENTRIES = [
   },
 ];
 
+/* Blueprint sketch panels for the hero glitch choreography:
+   mint-on-black crops from the process-book FINAL DESIGN page.
+   Black stays black so additive blending in three.js renders
+   only the linework. The 15MB source page is gitignored (too
+   heavy to commit); these entries skip gracefully without it. */
+const SKETCH_SRC = path.join(ROOT, "assets", "img", "process", "final-design-page.png");
+const SKETCHES = [
+  { name: "full-system", crop: { left: 3580, top: 2063, width: 1550, height: 2244 } },
+  { name: "tower", crop: { left: 5247, top: 2013, width: 1221, height: 1485 } },
+  { name: "resivor", crop: { left: 5148, top: 3548, width: 1287, height: 1402 } },
+];
+
 /* Open Graph card: full tower on the left third, gray field right. */
 const OG = {
   src: "full render.png",
@@ -77,7 +89,7 @@ const OG = {
 const args = process.argv.slice(2);
 const only = args.includes("--only") ? args[args.indexOf("--only") + 1] : null;
 const targets = only ? ENTRIES.filter((e) => e.name === only) : ENTRIES;
-if (targets.length === 0 && only !== "og") {
+if (targets.length === 0 && only !== "og" && only !== "sketches") {
   console.error(`No entry named "${only}"`);
   process.exit(1);
 }
@@ -112,4 +124,21 @@ if (!only || only === "og") {
     .png({ compressionLevel: 9 })
     .toFile(path.join(OUT_DIR, OG.out));
   console.log(`${OG.src} [og] -> ${OG.out}`);
+}
+
+if (!only || only === "sketches") {
+  const haveSrc = await access(SKETCH_SRC).then(() => true, () => false);
+  if (!haveSrc) {
+    console.log("sketch source missing — skipping sketch panels");
+  } else {
+    for (const s of SKETCHES) {
+      const outPath = path.join(OUT_DIR, `sketch-panel-${s.name}.webp`);
+      await sharp(SKETCH_SRC)
+        .extract(s.crop)
+        .resize({ width: 800 })
+        .webp(WEBP_OPTS)
+        .toFile(outPath);
+      console.log(`final-design-page.png [${s.name}] -> ${path.basename(outPath)}`);
+    }
+  }
 }

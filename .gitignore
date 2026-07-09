@@ -18,3 +18,4 @@ $RECYCLE.BIN/
 # Node (asset tooling in /scripts — not part of the site)
 node_modules/
 package-lock.json
+assets/img/process/final-design-page.png
