@@ -6,6 +6,13 @@
    render on mobile, reduced-motion, or WebGL failure; when the
    fallback is the visual and motion is allowed, it gets ambient
    Ken Burns + scroll parallax (static otherwise).
+
+   Wordmark exit: WORDMARK_HOLD seconds after its wipe-in
+   completes, the wordmark dissolves. In 3D mode the dissolve
+   rides a vector water splash — additive mint line droplets and
+   expanding waterline rings in the tower scene. Fallback mode
+   gets the plain dissolve; reduced motion keeps the wordmark
+   (a timed vanish is motion, so the static state is visible).
    ============================================================ */
 
 const hero = document.querySelector(".hero");
@@ -19,8 +26,26 @@ const IDLE_SPEED = (Math.PI * 2) / 60; // one revolution ≈ 60s
 const SCRUB_ANGLE = Math.PI;           // +180° over the scrub range
 const scrub = { angle: 0, pull: 0 };   // written by ScrollTrigger, read by render loop
 
+const WORDMARK_HOLD = 3; // seconds the wordmark stays once its wipe completes
+
+let splashBurst = null; // set by init3D once the scene can host the splash
+
 function revealNow() {
   document.documentElement.classList.remove("hero-intro");
+}
+
+/* Wordmark exit: splash (3D mode only), then a short sink-and-fade.
+   Only ever scheduled from the intro timeline, so gsap exists and
+   motion is allowed by the time this runs. */
+function dissolveWordmark() {
+  if (splashBurst) splashBurst();
+  gsap.to(".hero__wordmark", {
+    opacity: 0,
+    y: 24,
+    duration: 0.7,
+    delay: 0.12, // let the first droplets read as the cause
+    ease: "power2.in",
+  });
 }
 
 /* ---- intro: grid → wordmark wipe → visual → UI text (<2s) ---- */
@@ -44,7 +69,9 @@ function runIntro(visualEl) {
       { opacity: 0, y: 16 },
       { opacity: 1, y: 0, duration: 0.4, stagger: 0.1 },
       1.35
-    ); // last tween ends ≈ 1.95s
+    ) // last tween ends ≈ 1.95s
+    // wordmark wipe ends at 0.95 — hold it, then splash it away
+    .call(() => gsap.delayedCall(WORDMARK_HOLD, dissolveWordmark), [], 0.95);
 }
 
 /* ---- fallback ambient motion ---------------------------------
@@ -205,6 +232,153 @@ async function init3D() {
   camera.position.set(0, s * 0.06, baseZ);
   camera.lookAt(0, 0, 0);
 
+  /* ---- wordmark splash ---------------------------------------
+     One burst of streaking droplets plus expanding waterline
+     rings along the wordmark's baseline, drawn as additive lines
+     so they glow on the black grid and fade out by darkening to
+     black. Colors from css/tokens.css. */
+  let splash = null;
+
+  const MINT = new THREE.Color(0x8fcfb0);  /* --mint      */
+  const DEEP = new THREE.Color(0x5d8673);  /* --mint-deep */
+  const WHITE = new THREE.Color(0xffffff); /* --white     */
+
+  // screen point (NDC) -> world point on the model's z=0 plane
+  function ndcAtZ0(x, y) {
+    const p = new THREE.Vector3(x, y, 0.5).unproject(camera);
+    const dir = p.sub(camera.position).normalize();
+    const t = -camera.position.z / dir.z;
+    return camera.position.clone().addScaledVector(dir, t);
+  }
+
+  function makeSplash(left, right) {
+    const band = new THREE.Vector3().subVectors(right, left);
+    const W = band.length();
+    const V = W * 0.22; // launch speed scale
+    const G = -V * 2.4; // gravity
+    const N = 240;
+
+    const drops = [];
+    for (let i = 0; i < N; i++) {
+      const pick = Math.random();
+      drops.push({
+        pos: left.clone().addScaledVector(band, Math.random()),
+        vel: new THREE.Vector3(
+          (Math.random() - 0.5) * 0.7 * V,
+          (0.55 + Math.random() * 0.95) * V,
+          (Math.random() - 0.5) * 0.3 * V
+        ),
+        birth: Math.random() * 0.25,
+        life: 0.9 + Math.random() * 0.6,
+        color: pick < 0.6 ? MINT : pick < 0.85 ? DEEP : WHITE,
+      });
+    }
+
+    // one segment per droplet: head at pos, tail trailing the velocity
+    const pos = new Float32Array(N * 6);
+    const col = new Float32Array(N * 6);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    const mat = new THREE.LineBasicMaterial({
+      vertexColors: true,
+      blending: THREE.AdditiveBlending,
+      transparent: true,
+      depthWrite: false,
+    });
+    const lines = new THREE.LineSegments(geo, mat);
+    lines.frustumCulled = false;
+    scene.add(lines);
+
+    // flat elliptical rings that ripple out from the waterline
+    const rings = [0.22, 0.5, 0.78].map((f, i) => {
+      const pts = [];
+      for (let a = 0; a <= 48; a++) {
+        const th = (a / 48) * Math.PI * 2;
+        pts.push(new THREE.Vector3(Math.cos(th), 0, Math.sin(th) * 0.45));
+      }
+      const ring = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(pts),
+        new THREE.LineBasicMaterial({
+          color: DEEP,
+          blending: THREE.AdditiveBlending,
+          transparent: true,
+          depthWrite: false,
+        })
+      );
+      ring.position.copy(left).addScaledVector(band, f);
+      ring.frustumCulled = false;
+      ring.userData = { delay: i * 0.08, grow: W * (0.16 + 0.1 * Math.random()) };
+      scene.add(ring);
+      return ring;
+    });
+
+    let elapsed = 0;
+    const DUR = 1.9;
+
+    return {
+      update(dt) {
+        elapsed += dt;
+
+        for (let i = 0; i < N; i++) {
+          const d = drops[i];
+          const t = elapsed - d.birth;
+          const alive = t > 0 && t < d.life;
+          if (alive) {
+            d.vel.y += G * dt;
+            d.pos.addScaledVector(d.vel, dt);
+          }
+          // fade: full until 55% of life, then ease to black
+          const k = t / d.life;
+          const a = !alive ? 0 : k < 0.55 ? 1 : 1 - (k - 0.55) / 0.45;
+          const o = i * 6;
+          pos[o] = d.pos.x;
+          pos[o + 1] = d.pos.y;
+          pos[o + 2] = d.pos.z;
+          pos[o + 3] = d.pos.x - d.vel.x * 0.05;
+          pos[o + 4] = d.pos.y - d.vel.y * 0.05;
+          pos[o + 5] = d.pos.z - d.vel.z * 0.05;
+          col[o] = d.color.r * a;
+          col[o + 1] = d.color.g * a;
+          col[o + 2] = d.color.b * a;
+          col[o + 3] = d.color.r * a * 0.35; // dimmer tail = taper
+          col[o + 4] = d.color.g * a * 0.35;
+          col[o + 5] = d.color.b * a * 0.35;
+        }
+        geo.attributes.position.needsUpdate = true;
+        geo.attributes.color.needsUpdate = true;
+
+        rings.forEach((ring) => {
+          const k = Math.min(1, Math.max(0, elapsed - ring.userData.delay) / 1.1);
+          const e = 1 - Math.pow(1 - k, 3);
+          const r = 0.08 + ring.userData.grow * e;
+          ring.scale.set(r, 1, r);
+          ring.material.opacity = 1 - e;
+        });
+
+        if (elapsed >= DUR) {
+          scene.remove(lines);
+          geo.dispose();
+          mat.dispose();
+          rings.forEach((ring) => {
+            scene.remove(ring);
+            ring.geometry.dispose();
+            ring.material.dispose();
+          });
+          splash = null;
+        }
+      },
+    };
+  }
+
+  splashBurst = function () {
+    if (splash) return;
+    // wordmark box: centered at 42% viewport height, min(92vw, 1400px) wide
+    const ndcY = 1 - 2 * 0.42;
+    const halfW = 0.85 * Math.min(0.92, 1400 / canvas.clientWidth);
+    splash = makeSplash(ndcAtZ0(-halfW, ndcY), ndcAtZ0(halfW, ndcY));
+  };
+
   function resize() {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
@@ -246,6 +420,7 @@ async function init3D() {
     group.rotation.y = idle + scrub.angle;
     camera.position.z = baseZ + scrub.pull * pullDist;
     camera.lookAt(0, 0, 0);
+    if (splash) splash.update(dt);
     renderer.render(scene, camera);
   }
 
