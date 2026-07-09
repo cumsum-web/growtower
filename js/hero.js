@@ -13,9 +13,11 @@
    stroboscopic burst of flat vector glyphs (rings, plus marks,
    triangles, chevrons, corner brackets, one targeting reticle)
    popping around the baseline with no easing — faction-intro
-   motion language — plus a flickering scanline. Fallback mode
-   gets the jitter and collapse alone; reduced motion keeps the
-   wordmark (a timed vanish is motion, so static = visible).
+   motion language — plus a flickering scanline. Teal drifter
+   glyphs linger after the strobe, floating free and slowly
+   fading. Fallback mode gets the jitter and collapse alone;
+   reduced motion keeps the wordmark (a timed vanish is motion,
+   so static = visible).
    ============================================================ */
 
 const hero = document.querySelector(".hero");
@@ -252,8 +254,10 @@ async function init3D() {
      one targeting reticle — pops stroboscopically around the
      wordmark's baseline while it flickers out. Motion is
      quantized to STEP with no easing: glyphs appear, hold a few
-     frames, jump or vanish. Additive draw in token colors; teal
-     leads, mint reads as rim light. Colors from css/tokens.css. */
+     frames, jump or vanish. Teal-only drifters survive the
+     strobe, floating and slowly fading. Additive draw in token
+     colors; teal leads, mint reads as rim light. Colors from
+     css/tokens.css. */
   let burst = null;
 
   const MINT = new THREE.Color(0x8fcfb0);  /* --mint      */
@@ -398,9 +402,44 @@ async function init3D() {
     scan.frustumCulled = false;
     scene.add(scan);
 
+    /* lingering drifters: teal-only linework that floats free of
+       the strobe grid and slowly fades away — the holo debris
+       that hangs in the air after the burst. Smooth motion here
+       is deliberate contrast to the strobe glyphs. */
+    const drifters = [];
+    for (let i = 0; i < 9; i++) {
+      const kind = Math.random();
+      let obj;
+      if (kind < 0.3) obj = new THREE.LineLoop(ringGeo(28), lineMat(TEAL));
+      else if (kind < 0.55) obj = new THREE.LineLoop(triGeo(), lineMat(TEAL));
+      else if (kind < 0.8) obj = new THREE.Line(chevGeo(), lineMat(TEAL));
+      else obj = new THREE.LineSegments(bracketGeo(), lineMat(TEAL));
+      obj.frustumCulled = false;
+      obj.visible = false;
+      obj.position.copy(left)
+        .addScaledVector(band, Math.random())
+        .add(new THREE.Vector3(0, (Math.random() - 0.5) * W * 0.4, 0));
+      obj.rotation.z = Math.random() * Math.PI * 2;
+      obj.scale.setScalar(W * (0.015 + Math.random() * 0.035));
+      group.add(obj);
+      drifters.push({
+        obj,
+        vel: new THREE.Vector3(
+          (Math.random() - 0.5) * W * 0.04,
+          (0.02 + Math.random() * 0.025) * W, // gentle rise
+          (Math.random() - 0.5) * W * 0.015
+        ),
+        rotSpeed: (Math.random() - 0.5) * 0.7,
+        start: 1.0 + Math.random() * 0.5, // wakes as the strobe thins out
+        life: 3.5 + Math.random() * 3,
+        dim: 1, // stepped dropout, re-rolled on strobe boundaries
+      });
+    }
+
     let elapsed = 0;
     let lastIdx = -1;
-    const DUR = 1.5;
+    const DUR = 1.5; // strobe phase length
+    const endAt = drifters.reduce((m, d) => Math.max(m, d.start + d.life), DUR);
 
     return {
       update(dt) {
@@ -430,6 +469,10 @@ async function init3D() {
           // reticle blinks over the center on alternating steps
           reticle.visible = elapsed > 0.35 && elapsed < 1.1 && idx % 2 === 0;
           if (reticle.visible) reticle.rotation.z = ((idx % 4) * Math.PI) / 8;
+          // drifters drop a frame now and then — holo interference
+          for (const d of drifters) {
+            d.dim = Math.random() < 0.12 ? 0.15 : 1;
+          }
         }
 
         // scanline: hard flicker while it cools white -> teal
@@ -437,7 +480,21 @@ async function init3D() {
         scanMat.color.copy(WHITE).lerp(TEAL, sk);
         scanMat.opacity = (1 - sk) * (Math.floor(elapsed * 24) % 2 ? 0.45 : 1);
 
-        if (elapsed >= DUR) {
+        // drifters: smooth float, slow spin, long fade — teal only
+        for (const d of drifters) {
+          const t = elapsed - d.start;
+          if (t < 0 || t > d.life) {
+            d.obj.visible = false;
+            continue;
+          }
+          d.obj.visible = true;
+          d.obj.position.addScaledVector(d.vel, dt);
+          d.obj.rotation.z += d.rotSpeed * dt;
+          const k = t / d.life;
+          d.obj.material.opacity = (k < 0.4 ? 1 : 1 - (k - 0.4) / 0.6) * d.dim;
+        }
+
+        if (elapsed >= endAt) {
           scene.remove(group);
           group.traverse((o) => {
             if (o.geometry) o.geometry.dispose();
