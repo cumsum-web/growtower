@@ -87,6 +87,9 @@
   opacity: 0;
   display: none;
   pointer-events: none;
+  /* mint on the studio-gray panel is 1.1:1 — invisible; flatten
+     the icon to --black (~13:1) for this light surface only */
+  filter: brightness(0);
 }
 
 .features--3d .features__hotspot {
