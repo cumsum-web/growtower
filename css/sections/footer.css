@@ -1,0 +1,66 @@
+/* ============================================================
+   GROW TOWER — footer
+   Centered attribution under a chevron divider. First (and only)
+   interactive elements on the page live here, so link focus
+   styles are defined locally.
+   ============================================================ */
+
+.footer {
+  background-color: var(--black);
+  padding-block: clamp(4rem, 10vh, 7rem);
+  text-align: center;
+}
+
+.footer__inner {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+  display: grid;
+  justify-items: center;
+}
+
+.footer__divider {
+  width: min(8rem, 40vw);
+  margin: 0 0 3rem;
+}
+
+.footer__mark {
+  width: 2rem;
+  height: auto;
+  margin-bottom: 1.5rem;
+}
+
+.footer__credit {
+  font-weight: 700;
+}
+
+.footer__meta {
+  margin-top: 0.5rem;
+  font-size: var(--fs-eyebrow);
+  color: var(--gray-studio);
+}
+
+.footer__links {
+  margin-top: 2.5rem;
+  display: flex;
+  gap: 2rem;
+}
+
+.footer__links a {
+  font-weight: 700;
+  font-size: var(--fs-eyebrow);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--mint);
+  text-decoration: none;
+}
+
+.footer__links a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.35em;
+}
+
+.footer__links a:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: 4px;
+}
