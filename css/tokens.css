@@ -15,6 +15,17 @@
   font-display: swap;
 }
 
+/* Helvetica Neue LT Pro — 45 Light. Loaded only if something
+   sets font-weight: 300; free to register. */
+@font-face {
+  font-family: "Helvetica Neue LT Pro";
+  src: url("../assets/fonts/HelveticaNeueLTW0545Light.woff2") format("woff2"),
+       url("../assets/fonts/HelveticaNeueLTW0545Light.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Helvetica Neue LT Pro — 55 Roman */
 @font-face {
   font-family: "Helvetica Neue LT Pro";
