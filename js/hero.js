@@ -34,6 +34,7 @@ const scrub = { angle: 0, pull: 0 };   // written by ScrollTrigger, read by rend
 const WORDMARK_HOLD = 1.5; // seconds the wordmark stays once its wipe completes
 
 let glyphBurst = null; // set by init3D once the scene can host the burst
+let modelGlitch = null; // set by init3D: teal wireframe-ghost entrance
 
 const wm = ".hero__wordmark";
 const sh = (v) => ({ "--wm-shadow": v }); // chromatic teal offset
@@ -96,10 +97,13 @@ function runIntro(visualEl) {
     .set(wm, sh("0 0 0 transparent"), 0.70)
     .set(wm, { x: -2, ...sh("6px 0 0 var(--teal)") }, 0.84) // one last hiccup
     .set(wm, { x: 0, ...sh("0 0 0 transparent") }, 0.90)
-    // visual: hard pop with one dropped frame
+    // visual: hard pop, x-snaps, one dropped frame; in 3D mode the
+    // scene runs its own ghost entrance on the same beat
+    .call(() => { if (modelGlitch) modelGlitch(); }, [], 0.90)
     .set(visualEl, { opacity: 1 }, 0.90)
-    .set(visualEl, { opacity: 0.25 }, 1.00)
-    .set(visualEl, { opacity: 1 }, 1.05)
+    .set(visualEl, { x: -10 }, 0.94)
+    .set(visualEl, { opacity: 0.25, x: 8 }, 1.00)
+    .set(visualEl, { opacity: 1, x: 0 }, 1.05)
     // UI: staggered pops, each with a dim blip
     .set(".hero__brand", { opacity: 1 }, 1.15)
     .set(".hero__brand", { opacity: 0.4 }, 1.22)
@@ -543,6 +547,66 @@ async function init3D() {
     burst = makeGlyphBurst(ndcAtZ0(-halfW, ndcY), ndcAtZ0(halfW, ndcY));
   };
 
+  /* ---- model entrance glitch ---------------------------------
+     Runs as the intro pops the canvas in: a teal wireframe ghost
+     of the tower flickers and side-snaps around the model while
+     its rotation jumps in decaying steps and the model itself
+     drops early frames — then everything locks into the smooth
+     idle spin and the ghost is disposed. */
+  let entrance = null;
+
+  modelGlitch = function () {
+    if (entrance) return;
+    const wireMat = new THREE.MeshBasicMaterial({
+      color: TEAL,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.55,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const ghost = model.clone();
+    ghost.traverse((o) => {
+      if (o.isMesh) {
+        o.material = wireMat;
+        o.castShadow = false;
+      }
+    });
+    group.add(ghost);
+    const baseX = model.position.x; // keep the centering offset
+
+    const STEP = 1 / 18;
+    const DUR = 0.75;
+    let elapsed = 0;
+    let lastIdx = -1;
+
+    entrance = {
+      rotOffset: 0,
+      update(dt) {
+        elapsed += dt;
+        const p = Math.min(1, elapsed / DUR);
+        const idx = Math.floor(elapsed / STEP);
+        if (idx !== lastIdx) {
+          lastIdx = idx;
+          // everything decays toward stillness as p -> 1
+          this.rotOffset = (Math.random() - 0.5) * 1.1 * (1 - p);
+          ghost.visible = Math.random() < 0.75 * (1 - p) + 0.2;
+          ghost.position.x = baseX + (Math.random() - 0.5) * s * 0.06 * (1 - p);
+          ghost.rotation.y = (Math.random() - 0.5) * 0.3;
+          // occasional whole-model dropout early on
+          model.visible = p > 0.35 || Math.random() > 0.25;
+        }
+        if (elapsed >= DUR) {
+          model.visible = true;
+          group.remove(ghost);
+          wireMat.dispose(); // geometry is shared with the model — keep it
+          this.rotOffset = 0;
+          entrance = null;
+        }
+      },
+    };
+  };
+
   function resize() {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
@@ -581,7 +645,8 @@ async function init3D() {
     rafId = requestAnimationFrame(frame);
     const dt = Math.min(clock.getDelta(), 0.1);
     idle += dt * IDLE_SPEED;
-    group.rotation.y = idle + scrub.angle;
+    if (entrance) entrance.update(dt);
+    group.rotation.y = idle + scrub.angle + (entrance ? entrance.rotOffset : 0);
     camera.position.z = baseZ + scrub.pull * pullDist;
     camera.lookAt(0, 0, 0);
     if (burst) burst.update(dt);
