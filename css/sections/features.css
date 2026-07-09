@@ -100,7 +100,10 @@
 .features__list {
   list-style: none;
   margin: 0;
-  padding: 8vh 0 35vh;
+  /* bottom padding is scroll runway so the last card can reach
+     the activation zone (top 60% of viewport); 18vh is enough —
+     35vh left a dead gap before the materials strip */
+  padding: 8vh 0 18vh;
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
