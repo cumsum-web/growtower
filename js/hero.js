@@ -8,11 +8,12 @@
    Ken Burns + scroll parallax (static otherwise).
 
    Wordmark exit: WORDMARK_HOLD seconds after its wipe-in
-   completes, the wordmark dissolves. In 3D mode the dissolve
-   rides a vector water splash — additive mint line droplets and
-   expanding waterline rings in the tower scene. Fallback mode
-   gets the plain dissolve; reduced motion keeps the wordmark
-   (a timed vanish is motion, so the static state is visible).
+   completes, the wordmark flickers and collapses CRT-style. In
+   3D mode the collapse rides a vector water splash — faceted
+   teal/mint droplet shards, waterline rings, and a flickering
+   scanline in the tower scene. Fallback mode gets the flicker
+   and collapse alone; reduced motion keeps the wordmark (a
+   timed vanish is motion, so the static state is visible).
    ============================================================ */
 
 const hero = document.querySelector(".hero");
@@ -26,7 +27,7 @@ const IDLE_SPEED = (Math.PI * 2) / 60; // one revolution ≈ 60s
 const SCRUB_ANGLE = Math.PI;           // +180° over the scrub range
 const scrub = { angle: 0, pull: 0 };   // written by ScrollTrigger, read by render loop
 
-const WORDMARK_HOLD = 3; // seconds the wordmark stays once its wipe completes
+const WORDMARK_HOLD = 1.5; // seconds the wordmark stays once its wipe completes
 
 let splashBurst = null; // set by init3D once the scene can host the splash
 
@@ -34,18 +35,24 @@ function revealNow() {
   document.documentElement.classList.remove("hero-intro");
 }
 
-/* Wordmark exit: splash (3D mode only), then a short sink-and-fade.
-   Only ever scheduled from the intro timeline, so gsap exists and
+/* Wordmark exit: splash (3D mode only) while the wordmark itself
+   flickers twice and collapses to a bright line, CRT-style. Only
+   ever scheduled from the intro timeline, so gsap exists and
    motion is allowed by the time this runs. */
 function dissolveWordmark() {
   if (splashBurst) splashBurst();
-  gsap.to(".hero__wordmark", {
-    opacity: 0,
-    y: 24,
-    duration: 0.7,
-    delay: 0.12, // let the first droplets read as the cause
-    ease: "power2.in",
-  });
+  gsap.timeline()
+    .to(".hero__wordmark", { opacity: 0.25, duration: 0.06, ease: "none" })
+    .to(".hero__wordmark", { opacity: 1, duration: 0.05, ease: "none" })
+    .to(".hero__wordmark", { opacity: 0.4, duration: 0.05, ease: "none" })
+    .to(".hero__wordmark", { opacity: 1, duration: 0.04, ease: "none" })
+    .to(".hero__wordmark", {
+      scaleY: 0.04,
+      scaleX: 1.06,
+      opacity: 0,
+      duration: 0.32,
+      ease: "power3.in",
+    });
 }
 
 /* ---- intro: grid → wordmark wipe → visual → UI text (<2s) ---- */
@@ -233,14 +240,17 @@ async function init3D() {
   camera.lookAt(0, 0, 0);
 
   /* ---- wordmark splash ---------------------------------------
-     One burst of streaking droplets plus expanding waterline
-     rings along the wordmark's baseline, drawn as additive lines
-     so they glow on the black grid and fade out by darkening to
-     black. Colors from css/tokens.css. */
+     One burst of faceted droplet shards plus expanding waterline
+     rings and a flickering scanline along the wordmark's
+     baseline, drawn as additive lines so they glow on the black
+     grid and fade out by darkening to black. Teal carries the
+     burst (the product accent), mint reads as rim light. Colors
+     from css/tokens.css. */
   let splash = null;
 
   const MINT = new THREE.Color(0x8fcfb0);  /* --mint      */
   const DEEP = new THREE.Color(0x5d8673);  /* --mint-deep */
+  const TEAL = new THREE.Color(0x56a49a);  /* --teal      */
   const WHITE = new THREE.Color(0xffffff); /* --white     */
 
   // screen point (NDC) -> world point on the model's z=0 plane
@@ -261,22 +271,33 @@ async function init3D() {
     const drops = [];
     for (let i = 0; i < N; i++) {
       const pick = Math.random();
-      drops.push({
+      const vel = new THREE.Vector3(
+        (Math.random() - 0.5) * 0.7 * V,
+        (0.55 + Math.random() * 0.95) * V,
+        (Math.random() - 0.5) * 0.3 * V
+      );
+      // fixed sideways kink turns each streak into a faceted shard
+      const side = new THREE.Vector3(-vel.z, 0, vel.x);
+      if (side.lengthSq() < 1e-6) side.set(1, 0, 0);
+      const kink = side.normalize().multiplyScalar((Math.random() - 0.5) * V * 0.06);
+      const d = {
         pos: left.clone().addScaledVector(band, Math.random()),
-        vel: new THREE.Vector3(
-          (Math.random() - 0.5) * 0.7 * V,
-          (0.55 + Math.random() * 0.95) * V,
-          (Math.random() - 0.5) * 0.3 * V
-        ),
+        shown: new THREE.Vector3(), // rendered position (lags when glitching)
+        vel,
+        kink,
         birth: Math.random() * 0.25,
         life: 0.9 + Math.random() * 0.6,
-        color: pick < 0.6 ? MINT : pick < 0.85 ? DEEP : WHITE,
-      });
+        glitch: Math.random() < 0.3, // stepped ~12fps digital stutter
+        lastStep: -1,
+        color: pick < 0.45 ? TEAL : pick < 0.75 ? MINT : pick < 0.9 ? DEEP : WHITE,
+      };
+      d.shown.copy(d.pos);
+      drops.push(d);
     }
 
-    // one segment per droplet: head at pos, tail trailing the velocity
-    const pos = new Float32Array(N * 6);
-    const col = new Float32Array(N * 6);
+    // two segments per droplet (head->kinked mid, mid->tail): a shard
+    const pos = new Float32Array(N * 12);
+    const col = new Float32Array(N * 12);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
@@ -290,6 +311,23 @@ async function init3D() {
     lines.frustumCulled = false;
     scene.add(lines);
 
+    // scanline: the waterline flares white, cools to teal, dies
+    const scanMat = new THREE.LineBasicMaterial({
+      color: WHITE,
+      blending: THREE.AdditiveBlending,
+      transparent: true,
+      depthWrite: false,
+    });
+    const scan = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        left.clone().addScaledVector(band, -0.02),
+        right.clone().addScaledVector(band, 0.02),
+      ]),
+      scanMat
+    );
+    scan.frustumCulled = false;
+    scene.add(scan);
+
     // flat elliptical rings that ripple out from the waterline
     const rings = [0.22, 0.5, 0.78].map((f, i) => {
       const pts = [];
@@ -300,7 +338,7 @@ async function init3D() {
       const ring = new THREE.Line(
         new THREE.BufferGeometry().setFromPoints(pts),
         new THREE.LineBasicMaterial({
-          color: DEEP,
+          color: TEAL,
           blending: THREE.AdditiveBlending,
           transparent: true,
           depthWrite: false,
@@ -327,26 +365,48 @@ async function init3D() {
           if (alive) {
             d.vel.y += G * dt;
             d.pos.addScaledVector(d.vel, dt);
+            // glitching shards re-render at ~12fps; the rest track
+            if (!d.glitch || elapsed - d.lastStep >= 0.085) {
+              d.shown.copy(d.pos);
+              d.lastStep = elapsed;
+            }
           }
           // fade: full until 55% of life, then ease to black
           const k = t / d.life;
           const a = !alive ? 0 : k < 0.55 ? 1 : 1 - (k - 0.55) / 0.45;
-          const o = i * 6;
-          pos[o] = d.pos.x;
-          pos[o + 1] = d.pos.y;
-          pos[o + 2] = d.pos.z;
-          pos[o + 3] = d.pos.x - d.vel.x * 0.05;
-          pos[o + 4] = d.pos.y - d.vel.y * 0.05;
-          pos[o + 5] = d.pos.z - d.vel.z * 0.05;
-          col[o] = d.color.r * a;
-          col[o + 1] = d.color.g * a;
-          col[o + 2] = d.color.b * a;
-          col[o + 3] = d.color.r * a * 0.35; // dimmer tail = taper
-          col[o + 4] = d.color.g * a * 0.35;
-          col[o + 5] = d.color.b * a * 0.35;
+          const o = i * 12;
+          const mx = d.shown.x - d.vel.x * 0.028 + d.kink.x;
+          const my = d.shown.y - d.vel.y * 0.028 + d.kink.y;
+          const mz = d.shown.z - d.vel.z * 0.028 + d.kink.z;
+          // head -> mid
+          pos[o] = d.shown.x;
+          pos[o + 1] = d.shown.y;
+          pos[o + 2] = d.shown.z;
+          pos[o + 3] = mx;
+          pos[o + 4] = my;
+          pos[o + 5] = mz;
+          // mid -> tail
+          pos[o + 6] = mx;
+          pos[o + 7] = my;
+          pos[o + 8] = mz;
+          pos[o + 9] = d.shown.x - d.vel.x * 0.06;
+          pos[o + 10] = d.shown.y - d.vel.y * 0.06;
+          pos[o + 11] = d.shown.z - d.vel.z * 0.06;
+          // head + mid bright, tail dim = tapered shard
+          for (let v = 0; v < 4; v++) {
+            const f = v < 3 ? a : a * 0.3;
+            col[o + v * 3] = d.color.r * f;
+            col[o + v * 3 + 1] = d.color.g * f;
+            col[o + v * 3 + 2] = d.color.b * f;
+          }
         }
         geo.attributes.position.needsUpdate = true;
         geo.attributes.color.needsUpdate = true;
+
+        // scanline: hard flicker while it cools white -> teal
+        const sk = Math.min(1, elapsed / 0.3);
+        scanMat.color.copy(WHITE).lerp(TEAL, sk);
+        scanMat.opacity = (1 - sk) * (Math.floor(elapsed * 24) % 2 ? 0.45 : 1);
 
         rings.forEach((ring) => {
           const k = Math.min(1, Math.max(0, elapsed - ring.userData.delay) / 1.1);
@@ -360,6 +420,9 @@ async function init3D() {
           scene.remove(lines);
           geo.dispose();
           mat.dispose();
+          scene.remove(scan);
+          scan.geometry.dispose();
+          scanMat.dispose();
           rings.forEach((ring) => {
             scene.remove(ring);
             ring.geometry.dispose();
