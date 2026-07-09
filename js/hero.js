@@ -14,12 +14,11 @@
    triangles, chevrons, corner brackets, one targeting reticle)
    popping around the baseline with no easing — faction-intro
    motion language — plus a flickering scanline. Teal drifter
-   glyphs and two blueprint sketch sheets linger after the
-   strobe, floating free, then flicker out fast in a staggered
-   cascade. Design-page sketch panels also strobe beside the
-   model during its entrance. Fallback mode gets the jitter and
-   collapse alone; reduced motion keeps the wordmark (a timed
-   vanish is motion, so static = visible).
+   glyphs linger after the strobe, floating free, then flicker
+   out fast in a staggered cascade. Design-page sketch panels
+   strobe beside the model during its entrance. Fallback mode
+   gets the jitter and collapse alone; reduced motion keeps the
+   wordmark (a timed vanish is motion, so static = visible).
    ============================================================ */
 
 const hero = document.querySelector(".hero");
@@ -462,28 +461,20 @@ async function init3D() {
        that hangs in the air after the burst. Smooth motion here
        is deliberate contrast to the strobe glyphs. */
     const drifters = [];
-    for (let i = 0; i < 11; i++) {
-      const isSheet = i > 8; // last two: blueprint sketch panels, dying last
+    for (let i = 0; i < 9; i++) {
+      const kind = Math.random();
       let obj;
-      if (isSheet) {
-        const sk = sketches[i - 9];
-        obj = new THREE.Mesh(new THREE.PlaneGeometry(1, sk.ratio), sketchMat(sk.tex, 1));
-      } else {
-        const kind = Math.random();
-        if (kind < 0.3) obj = new THREE.LineLoop(ringGeo(28), lineMat(TEAL));
-        else if (kind < 0.55) obj = new THREE.LineLoop(triGeo(), lineMat(TEAL));
-        else if (kind < 0.8) obj = new THREE.Line(chevGeo(), lineMat(TEAL));
-        else obj = new THREE.LineSegments(bracketGeo(), lineMat(TEAL));
-      }
+      if (kind < 0.3) obj = new THREE.LineLoop(ringGeo(28), lineMat(TEAL));
+      else if (kind < 0.55) obj = new THREE.LineLoop(triGeo(), lineMat(TEAL));
+      else if (kind < 0.8) obj = new THREE.Line(chevGeo(), lineMat(TEAL));
+      else obj = new THREE.LineSegments(bracketGeo(), lineMat(TEAL));
       obj.frustumCulled = false;
       obj.visible = false;
       obj.position.copy(left)
         .addScaledVector(band, Math.random())
         .add(new THREE.Vector3(0, (Math.random() - 0.5) * W * 0.4, 0));
-      obj.rotation.z = isSheet ? 0 : Math.random() * Math.PI * 2;
-      obj.scale.setScalar(
-        isSheet ? W * (0.055 + Math.random() * 0.03) : W * (0.015 + Math.random() * 0.035)
-      );
+      obj.rotation.z = Math.random() * Math.PI * 2;
+      obj.scale.setScalar(W * (0.015 + Math.random() * 0.035));
       group.add(obj);
       drifters.push({
         obj,
@@ -492,7 +483,7 @@ async function init3D() {
           (0.02 + Math.random() * 0.025) * W, // gentle rise
           (Math.random() - 0.5) * W * 0.015
         ),
-        rotSpeed: (Math.random() - 0.5) * (isSheet ? 0.25 : 0.7),
+        rotSpeed: (Math.random() - 0.5) * 0.7,
         start: 1.0 + Math.random() * 0.4, // wakes as the strobe thins out
         // deaths cascade one by one — fast and staggered, no slow fade
         life: 1.3 + i * 0.22 + Math.random() * 0.15,
@@ -635,7 +626,7 @@ async function init3D() {
     }
 
     const STEP = 1 / 18;
-    const DUR = 0.75;
+    const DUR = 1.2;
     let elapsed = 0;
     let lastIdx = -1;
 
