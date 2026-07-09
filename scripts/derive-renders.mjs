@@ -65,10 +65,10 @@ const ENTRIES = [
   },
 ];
 
-/* Open Graph card: tower on thirds, gray field right. */
+/* Open Graph card: full tower on the left third, gray field right. */
 const OG = {
   src: "full render.png",
-  crop: { left: 340, top: 380, width: 2800, height: 1470 },
+  crop: { left: 140, top: 280, width: 3660, height: 1921 },
   out: "og-image.png",
   width: 1200,
   height: 630,
