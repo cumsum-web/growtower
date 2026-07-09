@@ -119,8 +119,10 @@
   border-color: var(--mint);
 }
 
+/* 0.65 keeps the dimmed cards above WCAG AA: the mint eyebrow
+   numbers land at ~5.2:1 on black (0.5 dropped them to 3.4:1). */
 .features--engaged .feature-card:not(.is-active) {
-  opacity: 0.5;
+  opacity: 0.65;
 }
 
 @media (prefers-reduced-motion: reduce) {
