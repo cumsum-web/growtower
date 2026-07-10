@@ -49,6 +49,29 @@
   filter: brightness(0) invert(1) drop-shadow(var(--wm-shadow, 0 0 0 transparent));
 }
 
+/* Ident flash: the full lockup strobes on the black void before
+   the wordmark arrives (js/hero.js). Opacity 0 at rest — only the
+   intro timeline ever shows it, so reduced-motion and no-JS users
+   never see the flash. --lk-shadow is the same chromatic teal
+   trick as the wordmark's --wm-shadow; the SVG already carries
+   its white/mint fills, so no invert filter here. */
+.hero__lockup {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  width: min(80vw, 860px);
+  z-index: 4;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hero__lockup img {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(var(--lk-shadow, 0 0 0 transparent));
+}
+
 .hero__canvas {
   position: absolute;
   inset: 0;
@@ -209,6 +232,10 @@
 
   .hero__wordmark {
     width: 96vw;
+  }
+
+  .hero__lockup {
+    width: 88vw;
   }
 
   .hero__fallback img {

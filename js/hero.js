@@ -7,6 +7,12 @@
    fallback is the visual and motion is allowed, it gets ambient
    Ken Burns + scroll parallax (static otherwise).
 
+   Intro: the full logo lockup strobe-flashes on the black void
+   as an ident card — slices in, holds one clean beat, dies in
+   hard bites — before the GROW TOWER wordmark runs its
+   slice-reveal. The brand row and info card hold back until the
+   4s mark of the timeline.
+
    Wordmark exit: WORDMARK_HOLD seconds after its wipe-in
    completes, the wordmark glitch-jitters, flickers, and
    collapses CRT-style. In 3D mode the collapse rides a
@@ -39,6 +45,9 @@ let modelGlitch = null; // set by init3D: teal wireframe-ghost entrance
 
 const wm = ".hero__wordmark";
 const sh = (v) => ({ "--wm-shadow": v }); // chromatic teal offset
+
+const lk = ".hero__lockup";
+const lsh = (v) => ({ "--lk-shadow": v }); // lockup's own shadow var
 
 function revealNow() {
   document.documentElement.classList.remove("hero-intro");
@@ -73,50 +82,79 @@ function dissolveWordmark() {
     .set(wm, sh("0 0 0 transparent"), 0.55);
 }
 
-/* ---- intro: stroboscopic glitch-in (~1.6s) --------------------
-   Distinct from the exit's glyph swarm: the intro language is
-   slice-reveal glitches and a teal chromatic shadow that the
-   wordmark sheds as it stabilizes. Every change is a hard set
-   snapped to the timeline; nothing eases. */
+/* ---- intro: ident flash + stroboscopic glitch-in --------------
+   Opens on the full lockup: it slice-flashes onto the black void,
+   holds one clean beat, re-glitches and dies in hard bites — a
+   faction ident card — then the grid flickers on and the wordmark
+   runs its slice-reveal. The language throughout is hard sets
+   snapped to the timeline with a teal chromatic shadow; nothing
+   eases. Brand + info card hold back until the 4s mark, landing
+   while the wordmark exit's drifter debris still floats. */
 function runIntro(visualEl) {
   if (!motionOK || typeof gsap === "undefined") {
     revealNow();
     return;
   }
   clearTimeout(window.__heroIntroTimer); // timeline owns the reveal now
+  // If the 3s safety timer already fired (slow model fetch), take the
+  // stage back to black so the ident plays clean instead of flashing
+  // over an already-revealed hero.
+  document.documentElement.classList.add("hero-intro");
+  // Bake the CSS translate(-50%,-50%) centering into GSAP's transform
+  // before any beat sets x — otherwise the first x snap replaces the
+  // centering and the element jumps half its width off-center (the
+  // exit's snaps ride the same cache, so once is enough).
+  gsap.set([wm, lk], { xPercent: -50, yPercent: -50, x: 0, y: 0 });
   gsap.timeline({ onComplete: revealNow })
+    // lockup ident: slice-flash in, one clean beat of stillness…
+    .set(lk, { opacity: 1, clipPath: "inset(0 58% 0 0)", x: -5, ...lsh("14px 3px 0 var(--teal)") }, 0)
+    .set(lk, { clipPath: "inset(0 22% 0 0)", x: 4, ...lsh("-10px -2px 0 var(--teal)") }, 0.06)
+    .set(lk, { opacity: 0.35 }, 0.12) // dropped frame
+    .set(lk, { opacity: 1, clipPath: "inset(0 0% 0 0)", x: 0, ...lsh("6px 0 0 var(--teal)") }, 0.17)
+    .set(lk, lsh("0 0 0 transparent"), 0.28)
+    // …then instability returns and it dies in hard bites
+    .set(lk, { x: 2, ...lsh("-8px 0 0 var(--teal)") }, 0.62)
+    .set(lk, { x: -6, opacity: 0.4, ...lsh("12px 2px 0 var(--teal)") }, 0.68)
+    .set(lk, { x: 8, opacity: 1, ...lsh("-16px -3px 0 var(--teal)") }, 0.74)
+    .set(lk, { clipPath: "inset(0 44% 0 0)", x: -3 }, 0.80)  // right bite
+    .set(lk, { clipPath: "inset(0 44% 0 38%)", x: 5 }, 0.86) // left bite — a sliver holds
+    .set(lk, { opacity: 0.5 }, 0.92)
+    .set(lk, { opacity: 0, ...lsh("0 0 0 transparent") }, 0.96)
     // grid: flicker on
-    .set(".hero__grid", { opacity: 1 }, 0.10)
-    .set(".hero__grid", { opacity: 0.3 }, 0.16)
-    .set(".hero__grid", { opacity: 1 }, 0.22)
-    // wordmark: slice-reveal, shadow and x snap around, then settle
-    .set(wm, { opacity: 1, clipPath: "inset(0 100% 0 0)" }, 0)
-    .set(wm, { clipPath: "inset(0 55% 0 0)", x: -6, ...sh("10px 0 0 var(--teal)") }, 0.25)
-    .set(wm, { clipPath: "inset(0 70% 0 0)", x: 4, ...sh("-7px 0 0 var(--teal)") }, 0.31)
-    .set(wm, { clipPath: "inset(0 30% 0 0)", x: -3, ...sh("5px 0 0 var(--teal)") }, 0.38)
-    .set(wm, { opacity: 0.4, clipPath: "inset(0 45% 0 0)" }, 0.45)
-    .set(wm, { opacity: 1, clipPath: "inset(0 12% 0 0)", x: 2, ...sh("-4px 0 0 var(--teal)") }, 0.50)
-    .set(wm, { clipPath: "inset(0 0% 0 0)", x: 0, ...sh("3px 0 0 var(--teal)") }, 0.58)
-    .set(wm, sh("0 0 0 transparent"), 0.70)
-    .set(wm, { x: -2, ...sh("6px 0 0 var(--teal)") }, 0.84) // one last hiccup
-    .set(wm, { x: 0, ...sh("0 0 0 transparent") }, 0.90)
+    .set(".hero__grid", { opacity: 1 }, 1.15)
+    .set(".hero__grid", { opacity: 0.3 }, 1.21)
+    .set(".hero__grid", { opacity: 1 }, 1.27)
+    // wordmark: slice-reveal, shadow and x snap around, then settle.
+    // Shadow opens violent — big offsets with a vertical kick on the
+    // first two hits — and decays to pure horizontal as it stabilizes.
+    .set(wm, { opacity: 1, clipPath: "inset(0 100% 0 0)" }, 1.05)
+    .set(wm, { clipPath: "inset(0 55% 0 0)", x: -6, ...sh("22px 5px 0 var(--teal)") }, 1.30)
+    .set(wm, { clipPath: "inset(0 70% 0 0)", x: 4, ...sh("-16px -4px 0 var(--teal)") }, 1.36)
+    .set(wm, { clipPath: "inset(0 30% 0 0)", x: -3, ...sh("11px 0 0 var(--teal)") }, 1.43)
+    .set(wm, { opacity: 0.4, clipPath: "inset(0 45% 0 0)" }, 1.50)
+    .set(wm, { opacity: 1, clipPath: "inset(0 12% 0 0)", x: 2, ...sh("-7px 0 0 var(--teal)") }, 1.55)
+    .set(wm, { clipPath: "inset(0 0% 0 0)", x: 0, ...sh("4px 0 0 var(--teal)") }, 1.63)
+    .set(wm, sh("0 0 0 transparent"), 1.75)
+    .set(wm, { x: -2, ...sh("9px 0 0 var(--teal)") }, 1.89) // one last hiccup
+    .set(wm, { x: 0, ...sh("0 0 0 transparent") }, 1.95)
     // visual: hard pop, x-snaps, one dropped frame; in 3D mode the
     // scene runs its own ghost entrance on the same beat
-    .call(() => { if (modelGlitch) modelGlitch(); }, [], 0.90)
-    .set(visualEl, { opacity: 1 }, 0.90)
-    .set(visualEl, { x: -10 }, 0.94)
-    .set(visualEl, { opacity: 0.25, x: 8 }, 1.00)
-    .set(visualEl, { opacity: 1, x: 0 }, 1.05)
-    // UI: staggered pops, each with a dim blip
-    .set(".hero__brand", { opacity: 1 }, 1.15)
-    .set(".hero__brand", { opacity: 0.4 }, 1.22)
-    .set(".hero__brand", { opacity: 1 }, 1.26)
-    .set(".hero__card", { opacity: 1, x: 6 }, 1.32)
-    .set(".hero__card", { opacity: 0.3 }, 1.39)
-    .set(".hero__card", { opacity: 1, x: 0 }, 1.43)
-    .set(".hero__cue", { opacity: 1 }, 1.55)
-    // wordmark stabilizes at 0.90 — hold it, then glitch it out
-    .call(() => gsap.delayedCall(WORDMARK_HOLD, dissolveWordmark), [], 0.95);
+    .call(() => { if (modelGlitch) modelGlitch(); }, [], 1.95)
+    .set(visualEl, { opacity: 1 }, 1.95)
+    .set(visualEl, { x: -10 }, 1.99)
+    .set(visualEl, { opacity: 0.25, x: 8 }, 2.05)
+    .set(visualEl, { opacity: 1, x: 0 }, 2.10)
+    // wordmark stabilizes at 1.95 — hold it, then glitch it out
+    .call(() => gsap.delayedCall(WORDMARK_HOLD, dissolveWordmark), [], 2.00)
+    // UI: holds back until the 4s mark — staggered pops with dim
+    // blips while the exit's drifters are still airborne
+    .set(".hero__brand", { opacity: 1 }, 4.00)
+    .set(".hero__brand", { opacity: 0.4 }, 4.07)
+    .set(".hero__brand", { opacity: 1 }, 4.11)
+    .set(".hero__card", { opacity: 1, x: 6 }, 4.15)
+    .set(".hero__card", { opacity: 0.3 }, 4.22)
+    .set(".hero__card", { opacity: 1, x: 0 }, 4.26)
+    .set(".hero__cue", { opacity: 1 }, 4.38);
 }
 
 /* ---- fallback ambient motion ---------------------------------
@@ -594,7 +632,7 @@ async function init3D() {
       color: TEAL,
       wireframe: true,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.75,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
@@ -648,8 +686,8 @@ async function init3D() {
           const settle = Math.max(0, (p - 0.75) / 0.25);
           this.rotOffset = (Math.random() - 0.5) * 1.1 * (1 - p);
           ghost.visible = settle < 0.6 && Math.random() < 0.75 * (1 - p) + 0.2;
-          if (ghost.visible) wireMat.opacity = 0.55 * (1 - settle);
-          ghost.position.x = baseX + (Math.random() - 0.5) * s * 0.06 * (1 - p);
+          if (ghost.visible) wireMat.opacity = 0.75 * (1 - settle);
+          ghost.position.x = baseX + (Math.random() - 0.5) * s * 0.1 * (1 - p);
           ghost.rotation.y = (Math.random() - 0.5) * 0.3;
           // occasional whole-model dropout early on
           model.visible = p > 0.35 || Math.random() > 0.25;
