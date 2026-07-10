@@ -38,7 +38,7 @@ const IDLE_SPEED = (Math.PI * 2) / 60; // one revolution ≈ 60s
 const SCRUB_ANGLE = Math.PI;           // +180° over the scrub range
 const scrub = { angle: 0, pull: 0 };   // written by ScrollTrigger, read by render loop
 
-const WORDMARK_HOLD = 1.5; // seconds the wordmark stays once its wipe completes
+const WORDMARK_HOLD = 1.0; // seconds the wordmark stays once its wipe completes
 
 let glyphBurst = null; // set by init3D once the scene can host the burst
 let modelGlitch = null; // set by init3D: teal wireframe-ghost entrance
@@ -106,46 +106,51 @@ function runIntro(visualEl) {
   // exit's snaps ride the same cache, so once is enough).
   gsap.set([wm, lk], { xPercent: -50, yPercent: -50, x: 0, y: 0 });
   gsap.timeline({ onComplete: revealNow })
-    // lockup ident: slice-flash in, one clean beat of stillness…
+    // lockup ident: slice-flash in, a long clean hold with one
+    // micro hiccup so the card reads but never freezes…
     .set(lk, { opacity: 1, clipPath: "inset(0 58% 0 0)", x: -5, ...lsh("14px 3px 0 var(--teal)") }, 0)
     .set(lk, { clipPath: "inset(0 22% 0 0)", x: 4, ...lsh("-10px -2px 0 var(--teal)") }, 0.06)
     .set(lk, { opacity: 0.35 }, 0.12) // dropped frame
     .set(lk, { opacity: 1, clipPath: "inset(0 0% 0 0)", x: 0, ...lsh("6px 0 0 var(--teal)") }, 0.17)
     .set(lk, lsh("0 0 0 transparent"), 0.28)
+    .set(lk, { x: -2, ...lsh("7px 0 0 var(--teal)") }, 0.72) // micro hiccup
+    .set(lk, { x: 0, ...lsh("0 0 0 transparent") }, 0.78)
     // …then instability returns and it dies in hard bites
-    .set(lk, { x: 2, ...lsh("-8px 0 0 var(--teal)") }, 0.62)
-    .set(lk, { x: -6, opacity: 0.4, ...lsh("12px 2px 0 var(--teal)") }, 0.68)
-    .set(lk, { x: 8, opacity: 1, ...lsh("-16px -3px 0 var(--teal)") }, 0.74)
-    .set(lk, { clipPath: "inset(0 44% 0 0)", x: -3 }, 0.80)  // right bite
-    .set(lk, { clipPath: "inset(0 44% 0 38%)", x: 5 }, 0.86) // left bite — a sliver holds
-    .set(lk, { opacity: 0.5 }, 0.92)
-    .set(lk, { opacity: 0, ...lsh("0 0 0 transparent") }, 0.96)
+    .set(lk, { x: 2, ...lsh("-8px 0 0 var(--teal)") }, 1.12)
+    .set(lk, { x: -6, opacity: 0.4, ...lsh("12px 2px 0 var(--teal)") }, 1.18)
+    .set(lk, { x: 8, opacity: 1, ...lsh("-16px -3px 0 var(--teal)") }, 1.24)
+    .set(lk, { clipPath: "inset(0 44% 0 0)", x: -3 }, 1.30)  // right bite
+    .set(lk, { clipPath: "inset(0 44% 0 38%)", x: 5 }, 1.36) // left bite — a sliver holds
+    .set(lk, { opacity: 0.5 }, 1.42)
+    .set(lk, { opacity: 0, ...lsh("0 0 0 transparent") }, 1.46)
     // grid: flicker on
-    .set(".hero__grid", { opacity: 1 }, 1.15)
-    .set(".hero__grid", { opacity: 0.3 }, 1.21)
-    .set(".hero__grid", { opacity: 1 }, 1.27)
+    .set(".hero__grid", { opacity: 1 }, 1.65)
+    .set(".hero__grid", { opacity: 0.3 }, 1.71)
+    .set(".hero__grid", { opacity: 1 }, 1.77)
     // wordmark: slice-reveal, shadow and x snap around, then settle.
     // Shadow opens violent — big offsets with a vertical kick on the
     // first two hits — and decays to pure horizontal as it stabilizes.
-    .set(wm, { opacity: 1, clipPath: "inset(0 100% 0 0)" }, 1.05)
-    .set(wm, { clipPath: "inset(0 55% 0 0)", x: -6, ...sh("22px 5px 0 var(--teal)") }, 1.30)
-    .set(wm, { clipPath: "inset(0 70% 0 0)", x: 4, ...sh("-16px -4px 0 var(--teal)") }, 1.36)
-    .set(wm, { clipPath: "inset(0 30% 0 0)", x: -3, ...sh("11px 0 0 var(--teal)") }, 1.43)
-    .set(wm, { opacity: 0.4, clipPath: "inset(0 45% 0 0)" }, 1.50)
-    .set(wm, { opacity: 1, clipPath: "inset(0 12% 0 0)", x: 2, ...sh("-7px 0 0 var(--teal)") }, 1.55)
-    .set(wm, { clipPath: "inset(0 0% 0 0)", x: 0, ...sh("4px 0 0 var(--teal)") }, 1.63)
-    .set(wm, sh("0 0 0 transparent"), 1.75)
-    .set(wm, { x: -2, ...sh("9px 0 0 var(--teal)") }, 1.89) // one last hiccup
-    .set(wm, { x: 0, ...sh("0 0 0 transparent") }, 1.95)
+    .set(wm, { opacity: 1, clipPath: "inset(0 100% 0 0)" }, 1.55)
+    .set(wm, { clipPath: "inset(0 55% 0 0)", x: -6, ...sh("22px 5px 0 var(--teal)") }, 1.80)
+    .set(wm, { clipPath: "inset(0 70% 0 0)", x: 4, ...sh("-16px -4px 0 var(--teal)") }, 1.86)
+    .set(wm, { clipPath: "inset(0 30% 0 0)", x: -3, ...sh("11px 0 0 var(--teal)") }, 1.93)
+    .set(wm, { opacity: 0.4, clipPath: "inset(0 45% 0 0)" }, 2.00)
+    .set(wm, { opacity: 1, clipPath: "inset(0 12% 0 0)", x: 2, ...sh("-7px 0 0 var(--teal)") }, 2.05)
+    .set(wm, { clipPath: "inset(0 0% 0 0)", x: 0, ...sh("4px 0 0 var(--teal)") }, 2.13)
+    .set(wm, sh("0 0 0 transparent"), 2.25)
+    .set(wm, { x: -2, ...sh("9px 0 0 var(--teal)") }, 2.39) // one last hiccup
+    .set(wm, { x: 0, ...sh("0 0 0 transparent") }, 2.45)
     // visual: hard pop, x-snaps, one dropped frame; in 3D mode the
     // scene runs its own ghost entrance on the same beat
-    .call(() => { if (modelGlitch) modelGlitch(); }, [], 1.95)
-    .set(visualEl, { opacity: 1 }, 1.95)
-    .set(visualEl, { x: -10 }, 1.99)
-    .set(visualEl, { opacity: 0.25, x: 8 }, 2.05)
-    .set(visualEl, { opacity: 1, x: 0 }, 2.10)
-    // wordmark stabilizes at 1.95 — hold it, then glitch it out
-    .call(() => gsap.delayedCall(WORDMARK_HOLD, dissolveWordmark), [], 2.00)
+    .call(() => { if (modelGlitch) modelGlitch(); }, [], 2.45)
+    .set(visualEl, { opacity: 1 }, 2.45)
+    .set(visualEl, { x: -10 }, 2.49)
+    .set(visualEl, { opacity: 0.25, x: 8 }, 2.55)
+    .set(visualEl, { opacity: 1, x: 0 }, 2.60)
+    // wordmark stabilizes at 2.45 — hold it, then glitch it out
+    // (hold trimmed so the dissolve still lands ~3.5s, ahead of
+    // the 4s UI beat)
+    .call(() => gsap.delayedCall(WORDMARK_HOLD, dissolveWordmark), [], 2.50)
     // UI: holds back until the 4s mark — staggered pops with dim
     // blips while the exit's drifters are still airborne
     .set(".hero__brand", { opacity: 1 }, 4.00)
