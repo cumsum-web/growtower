@@ -139,13 +139,12 @@ function runIntro(visualEl) {
     .set(wm, sh("0 0 0 transparent"), 2.25)
     .set(wm, { x: -2, ...sh("9px 0 0 var(--teal)") }, 2.39) // one last hiccup
     .set(wm, { x: 0, ...sh("0 0 0 transparent") }, 2.45)
-    // visual: hard pop, x-snaps, one dropped frame; in 3D mode the
-    // scene runs its own ghost entrance on the same beat
+    // visual: hard pop, one dropped frame; in 3D mode the scene
+    // runs its own ghost entrance on the same beat
     .call(() => { if (modelGlitch) modelGlitch(); }, [], 2.45)
     .set(visualEl, { opacity: 1 }, 2.45)
-    .set(visualEl, { x: -10 }, 2.49)
-    .set(visualEl, { opacity: 0.25, x: 8 }, 2.55)
-    .set(visualEl, { opacity: 1, x: 0 }, 2.60)
+    .set(visualEl, { opacity: 0.25 }, 2.55)
+    .set(visualEl, { opacity: 1 }, 2.60)
     // wordmark stabilizes at 2.45 — hold it, then glitch it out
     // (hold trimmed so the dissolve still lands ~3.5s, ahead of
     // the 4s UI beat)
@@ -596,10 +595,10 @@ async function init3D() {
 
   /* ---- model entrance glitch ---------------------------------
      Runs as the intro pops the canvas in: a teal wireframe ghost
-     of the tower flickers and side-snaps around the model while
-     its rotation jumps in decaying steps and the model drops
-     early frames. Then everything locks into the smooth idle
-     spin and the ghost is disposed. */
+     of the tower flickers over the model while it drops early
+     frames — a hologram resolving in place. Nothing moves; the
+     model holds its idle spin throughout. Then the ghost thins
+     out and is disposed. */
   let entrance = null;
 
   modelGlitch = function () {
@@ -620,7 +619,6 @@ async function init3D() {
       }
     });
     group.add(ghost);
-    const baseX = model.position.x; // keep the centering offset
 
     const STEP = 1 / 18;
     const DUR = 1.2;
@@ -628,22 +626,18 @@ async function init3D() {
     let lastIdx = -1;
 
     entrance = {
-      rotOffset: 0,
       update(dt) {
         elapsed += dt;
         const p = Math.min(1, elapsed / DUR);
         const idx = Math.floor(elapsed / STEP);
         if (idx !== lastIdx) {
           lastIdx = idx;
-          // everything decays toward stillness as p -> 1; the tail
+          // the flicker decays toward stillness as p -> 1; the tail
           // (settle) fades the ghost out so nothing is left to pop
           // off mid-frame at the DUR cutoff
           const settle = Math.max(0, (p - 0.75) / 0.25);
-          this.rotOffset = (Math.random() - 0.5) * 1.1 * (1 - p);
           ghost.visible = settle < 0.6 && Math.random() < 0.75 * (1 - p) + 0.2;
           if (ghost.visible) wireMat.opacity = 0.75 * (1 - settle);
-          ghost.position.x = baseX + (Math.random() - 0.5) * s * 0.1 * (1 - p);
-          ghost.rotation.y = (Math.random() - 0.5) * 0.3;
           // occasional whole-model dropout early on
           model.visible = p > 0.35 || Math.random() > 0.25;
         }
@@ -651,7 +645,6 @@ async function init3D() {
           model.visible = true;
           group.remove(ghost);
           wireMat.dispose(); // geometry is shared with the model — keep it
-          this.rotOffset = 0;
           entrance = null;
         }
       },
@@ -697,7 +690,7 @@ async function init3D() {
     const dt = Math.min(clock.getDelta(), 0.1);
     idle += dt * IDLE_SPEED;
     if (entrance) entrance.update(dt);
-    group.rotation.y = idle + scrub.angle + (entrance ? entrance.rotOffset : 0);
+    group.rotation.y = idle + scrub.angle;
     camera.position.z = baseZ + scrub.pull * pullDist;
     camera.lookAt(0, 0, 0);
     if (burst) burst.update(dt);
